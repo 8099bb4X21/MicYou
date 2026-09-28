@@ -386,7 +386,9 @@
     },
     "remoteKeyDriver": {
       "title": "虚拟键盘驱动缺失",
-      "desc": "手机发来了远程按键，但本机 WinUHid 虚拟键盘不可用，按键已丢弃。\n\n请安装 WinUHid 驱动（Windows 10 用 UMDF 2.15 构建版）并重启后再试。"
+      "desc": "手机发来了远程按键，但本机 WinUHid 虚拟键盘不可用，按键已丢弃。\n\n请安装 WinUHid 驱动（Windows 10 用 UMDF 2.15 构建版）并重启后再试。",
+      "importButton": "导入 WinUHid.dll…",
+      "importedNotReady": "DLL已导入，但虚拟键盘仍未就绪：请确认已安装WinUHid驱动并重启电脑后再试。"
     }
   },
   "tray": {

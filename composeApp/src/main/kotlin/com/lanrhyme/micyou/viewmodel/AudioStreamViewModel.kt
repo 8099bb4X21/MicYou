@@ -22,6 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -120,8 +121,8 @@ class AudioStreamViewModel : ViewModel() {
                     delay(30_000)
                     if (!settings.getBoolean("auto_disconnect_enabled", false)) continue
                     if (_uiState.value.streamState != StreamState.Streaming) continue
-                    val hour = settings.getInt("auto_disconnect_hour", 23)
-                    val minute = settings.getInt("auto_disconnect_minute", 0)
+                    val hour = settings.getInt("auto_disconnect_hour", 19)
+                    val minute = settings.getInt("auto_disconnect_minute", 30)
                     val now = java.util.Calendar.getInstance()
                     if (now.get(java.util.Calendar.HOUR_OF_DAY) != hour ||
                         now.get(java.util.Calendar.MINUTE) != minute

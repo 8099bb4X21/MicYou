@@ -223,6 +223,7 @@ pub fn run() {
             commands::is_floating_window_visible,
             commands::move_floating_window_delta,
             commands::allow_firewall,
+            commands::import_winuhid_dll,
             commands::exit_app,
             commands::set_mute_state,
             commands::get_streaming_status,

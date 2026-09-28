@@ -28,10 +28,20 @@
           <div class="bg-surface-container-highest/30 rounded-xl p-4 text-sm text-on-surface-variant text-left leading-relaxed border border-white/5 shadow-inner">
             {{ $t('dialogs.remoteKeyDriver.desc') }}
           </div>
+
+          <div v-if="importError" class="bg-error/10 rounded-xl p-3 text-sm text-error text-left leading-relaxed border border-error/20">
+            {{ importError }}
+          </div>
         </div>
 
         <!-- Actions -->
         <div class="px-8 pb-8 flex flex-col gap-3 relative z-10">
+          <button
+            @click="handleImport"
+            class="w-full py-3.5 rounded-xl bg-primary hover:bg-primary/90 text-on-primary font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all duration-300 hover:scale-[0.98] active:scale-95"
+          >
+            {{ $t('dialogs.remoteKeyDriver.importButton') }}
+          </button>
           <button
             @click="close"
             class="w-full py-3.5 rounded-xl bg-primary hover:bg-primary/90 text-on-primary font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all duration-300 hover:scale-[0.98] active:scale-95"
@@ -46,7 +56,11 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Keyboard as KeyboardIcon } from '@lucide/vue'
+import { invoke } from '@tauri-apps/api/core'
+import { open } from '@tauri-apps/plugin-dialog'
 
 defineProps<{
   show: boolean
@@ -56,7 +70,31 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
+const importError = ref('')
+const { t } = useI18n()
+
+async function handleImport() {
+  importError.value = ''
+  try {
+    const picked = await open({
+      multiple: false,
+      directory: false,
+      filters: [{ name: 'WinUHid', extensions: ['dll'] }],
+    })
+    if (!picked) return // 用户取消
+    const ready = await invoke<boolean>('import_winuhid_dll', { path: String(picked) })
+    if (ready) {
+      emit('close')
+    } else {
+      importError.value = t('dialogs.remoteKeyDriver.importedNotReady')
+    }
+  } catch (e) {
+    importError.value = String(e)
+  }
+}
+
 const close = () => {
+  importError.value = ''
   emit('close')
 }
 </script>

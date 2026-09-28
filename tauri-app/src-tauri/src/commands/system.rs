@@ -1524,6 +1524,11 @@ pub async fn allow_firewall() -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn import_winuhid_dll(path: String) -> Result<bool, String> {
+    crate::remote_key::import_dll(&path)
+}
+
+#[tauri::command]
 pub async fn exit_app(app: AppHandle, state: State<'_, ServerState>) -> Result<(), String> {
     let _ = stop_server(app.clone(), state).await;
     log::info!(target: "tray", "exit_app: stopping application");

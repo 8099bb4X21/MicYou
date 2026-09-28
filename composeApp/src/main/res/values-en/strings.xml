@@ -194,6 +194,9 @@
     <string name="statusConnecting">Connecting…</string>
     <string name="statusStreaming">Connected · %1$s:%2$s</string>
     <string name="statusError">Error</string>
+    <string name="autoDisconnectLabel">Auto Disconnect Daily</string>
+    <string name="autoDisconnectDesc">Automatically stop streaming every day at the set time</string>
+    <string name="autoDisconnectTimeLabel">Disconnect Time</string>
     <string name="languageLabel">Language</string>
     
     <string name="licensesTitle">Open Source Libraries and Licenses</string>

@@ -47,8 +47,8 @@ data class SettingsUiState(
     val keepScreenOn: Boolean = false,
     val volumeKeysSendRemoteKey: Boolean = true,
     val autoDisconnectEnabled: Boolean = false,
-    val autoDisconnectHour: Int = 23,
-    val autoDisconnectMinute: Int = 0,
+    val autoDisconnectHour: Int = 19,
+    val autoDisconnectMinute: Int = 30,
     val autoCheckUpdate: Boolean = true,
     val useMirrorDownload: Boolean = false,
     val mirrorCdk: String = "",
@@ -87,8 +87,8 @@ class SettingsViewModel : ViewModel() {
     val savedKeepScreenOn = settings.getBoolean("keep_screen_on", false)
     val savedVolumeKeysSendRemoteKey = settings.getBoolean("volume_keys_send_remote_key", true)
     val savedAutoDisconnectEnabled = settings.getBoolean("auto_disconnect_enabled", false)
-    val savedAutoDisconnectHour = settings.getInt("auto_disconnect_hour", 23)
-    val savedAutoDisconnectMinute = settings.getInt("auto_disconnect_minute", 0)
+    val savedAutoDisconnectHour = settings.getInt("auto_disconnect_hour", 19)
+    val savedAutoDisconnectMinute = settings.getInt("auto_disconnect_minute", 30)
     val savedVisualizerStyleName = settings.getString("visualizer_style", VisualizerStyle.VolumeRing.name)
     val savedVisualizerStyle = try {
             VisualizerStyle.valueOf(savedVisualizerStyleName)

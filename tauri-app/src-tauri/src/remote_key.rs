@@ -123,6 +123,11 @@ fn dll_candidates() -> Vec<PathBuf> {
             out.push(PathBuf::from(t));
         }
     }
+    // 应用内导入落盘位置（设置页/驱动缺失弹窗一键导入，免手动拷安装目录）。
+    #[cfg(target_os = "windows")]
+    if let Some(p) = imported_dll_path() {
+        out.push(p);
+    }
     if let Ok(exe) = std::env::current_exe() {
         if let Some(dir) = exe.parent() {
             out.push(dir.join("WinUHid.dll"));
@@ -238,6 +243,50 @@ fn build_keyboard_report(vks: &[u16]) -> Result<[u8; 8], String> {
         report[2 + i] = u;
     }
     Ok(report)
+}
+
+/// 用户导入的 DLL 落盘位置（%APPDATA%\micyou\WinUHid.dll）。
+#[cfg(target_os = "windows")]
+pub fn imported_dll_path() -> Option<PathBuf> {
+    std::env::var("APPDATA")
+        .ok()
+        .map(|a| PathBuf::from(a).join("micyou").join("WinUHid.dll"))
+}
+
+/// 从用户选择的位置导入 WinUHid.dll 并立即重试初始化。
+/// 返回 true 表示导入后虚拟键盘已就绪；false 表示已落盘但驱动仍不可用（需装驱动/重启）。
+pub fn import_dll(src: &str) -> Result<bool, String> {
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = src;
+        return Err("仅 Windows 支持导入 WinUHid.dll".into());
+    }
+    #[cfg(target_os = "windows")]
+    {
+        let src_path = PathBuf::from(src);
+        if !src_path.is_file() {
+            return Err("源文件不存在".into());
+        }
+        let name_ok = src_path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .map(|n| n.eq_ignore_ascii_case("WinUHid.dll"))
+            .unwrap_or(false);
+        if !name_ok {
+            return Err("请选择 WinUHid.dll 文件".into());
+        }
+        let meta = std::fs::metadata(&src_path).map_err(|e| e.to_string())?;
+        if !(50_000..=2_000_000).contains(&meta.len()) {
+            return Err(format!("文件大小异常（{}字节），疑似非 WinUHid.dll", meta.len()));
+        }
+        let dst = imported_dll_path().ok_or("无法定位 APPDATA 目录")?;
+        if let Some(parent) = dst.parent() {
+            std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+        }
+        std::fs::copy(&src_path, &dst).map_err(|e| format!("复制失败：{e}"))?;
+        reset_and_retry();
+        Ok(is_ready_cached())
+    }
 }
 
 /// 修复安装后允许重新探测 DLL/驱动

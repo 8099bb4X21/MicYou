@@ -386,7 +386,9 @@
     },
     "remoteKeyDriver": {
       "title": "Virtual keyboard driver missing",
-      "desc": "The phone sent a remote key press, but the WinUHid virtual keyboard is not available on this PC, so the key was dropped.\n\nPlease install the WinUHid driver (UMDF 2.15 build for Windows 10) and restart, then try again."
+      "desc": "The phone sent a remote key press, but the WinUHid virtual keyboard is not available on this PC, so the key was dropped.\n\nPlease install the WinUHid driver (UMDF 2.15 build for Windows 10) and restart, then try again.",
+      "importButton": "Import WinUHid.dll…",
+      "importedNotReady": "DLL imported, but the virtual keyboard is still not ready: please make sure the WinUHid driver is installed and restart your PC, then try again."
     }
   },
   "tray": {
