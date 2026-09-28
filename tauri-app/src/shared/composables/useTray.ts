@@ -12,6 +12,7 @@ export interface TrayMenuStrings {
   exit: string;
   switchCli: string;
   switchTui: string;
+  sendKey: string;
 }
 
 export interface TrayState {
@@ -39,6 +40,7 @@ export function trayStringsFromI18n(
     exit: t("tray.exit"),
     switchCli: t("tray.switchCli"),
     switchTui: t("tray.switchTui"),
+    sendKey: t("tray.sendKey"),
   };
 }
 

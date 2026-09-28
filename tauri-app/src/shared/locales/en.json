@@ -399,7 +399,8 @@
     "stop": "Stop Streaming",
     "exit": "Exit",
     "switchCli": "Switch to CLI Mode",
-    "switchTui": "Switch to TUI Mode"
+    "switchTui": "Switch to TUI Mode",
+    "sendKey": "Send RAlt+Space once"
   },
   "closeConfirm": {
     "title": "Close MicYou",

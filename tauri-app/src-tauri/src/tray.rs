@@ -34,6 +34,9 @@ pub struct TrayMenuStrings {
     pub switch_cli: String,
     #[serde(default)]
     pub switch_tui: String,
+    /// 托盘发送一次右Alt+空格（远程按键分支新增）。
+    #[serde(default)]
+    pub send_key: String,
 }
 
 impl TrayMenuStrings {
@@ -47,6 +50,7 @@ impl TrayMenuStrings {
             exit: "Exit".to_string(),
             switch_cli: "Switch to CLI Mode".to_string(),
             switch_tui: "Switch to TUI Mode".to_string(),
+            send_key: "Send RAlt+Space once".to_string(),
         }
     }
 }
@@ -82,6 +86,7 @@ pub const MENU_ID_TOGGLE_STREAM: &str = "toggle_stream";
 pub const MENU_ID_EXIT: &str = "exit";
 pub const MENU_ID_SWITCH_CLI: &str = "switch_cli";
 pub const MENU_ID_SWITCH_TUI: &str = "switch_tui";
+pub const MENU_ID_SEND_KEY: &str = "send_key";
 
 pub struct TrayContext {
     pub strings: Mutex<TrayMenuStrings>,
@@ -126,6 +131,33 @@ pub fn build_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
                 | MENU_ID_SWITCH_CLI
                 | MENU_ID_SWITCH_TUI => {
                     let _ = app.emit("tray-action", id);
+                }
+                MENU_ID_SEND_KEY => {
+                    // 托盘点一次 = 右Alt+空格点一下（DOWN→80ms→UP），无驱动走缺驱动弹窗。
+                    #[cfg(target_os = "windows")]
+                    {
+                        let app = app.clone();
+                        std::thread::spawn(move || {
+                            let Some(vks) =
+                                crate::remote_key::vks_for_key(crate::remote_key::KEY_ALT_SPACE)
+                            else {
+                                return;
+                            };
+                            if !crate::remote_key::is_available() {
+                                log::warn!(target: "tray", "remote-key: WinUHid unavailable");
+                                let _ = app.emit("remote-key-driver-missing", ());
+                                return;
+                            }
+                            if crate::remote_key::press(&vks).is_ok() {
+                                std::thread::sleep(std::time::Duration::from_millis(80));
+                                let _ = crate::remote_key::release(&vks);
+                            }
+                        });
+                    }
+                    #[cfg(not(target_os = "windows"))]
+                    {
+                        log::warn!(target: "tray", "remote-key: only supported on Windows");
+                    }
                 }
                 other => {
                     log::warn!(target: "tray", "unknown menu id: {other}");
@@ -197,6 +229,13 @@ fn build_menu<R: Runtime>(
         true,
         None::<&str>,
     )?;
+    let send_key = MenuItem::with_id(
+        app,
+        MENU_ID_SEND_KEY,
+        &strings.send_key,
+        true,
+        None::<&str>,
+    )?;
     let exit = MenuItem::with_id(app, MENU_ID_EXIT, &strings.exit, true, None::<&str>)?;
     let separator = PredefinedMenuItem::separator(app)?;
     Menu::with_items(
@@ -204,6 +243,7 @@ fn build_menu<R: Runtime>(
         &[
             &show_hide,
             &toggle_stream,
+            &send_key,
             &separator,
             &switch_cli,
             &switch_tui,
@@ -227,6 +267,7 @@ mod tests {
             exit: "Exit".into(),
             switch_cli: "Switch".into(),
             switch_tui: "Switch TUI".into(),
+            send_key: "Send key".into(),
         }
     }
 
