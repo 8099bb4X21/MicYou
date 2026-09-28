@@ -109,6 +109,39 @@ class AudioStreamViewModel : ViewModel() {
         if (_uiState.value.mode == ConnectionMode.Wifi) {
             discoveryManager.startDiscovery()
         }
+        startAutoDisconnectTicker()
+    }
+
+    /** 每天定时断开：每30s对一次表，到点且正在串流则断开，当天只触发一次。 */
+    private fun startAutoDisconnectTicker() {
+        auxiliaryScope.launch {
+            while (true) {
+                try {
+                    delay(30_000)
+                    if (!settings.getBoolean("auto_disconnect_enabled", false)) continue
+                    if (_uiState.value.streamState != StreamState.Streaming) continue
+                    val hour = settings.getInt("auto_disconnect_hour", 23)
+                    val minute = settings.getInt("auto_disconnect_minute", 0)
+                    val now = java.util.Calendar.getInstance()
+                    if (now.get(java.util.Calendar.HOUR_OF_DAY) != hour ||
+                        now.get(java.util.Calendar.MINUTE) != minute
+                    ) continue
+                    val today = "%04d-%02d-%02d".format(
+                        now.get(java.util.Calendar.YEAR),
+                        now.get(java.util.Calendar.MONTH) + 1,
+                        now.get(java.util.Calendar.DAY_OF_MONTH)
+                    )
+                    if (settings.getString("auto_disconnect_last_date", "") == today) continue
+                    settings.putString("auto_disconnect_last_date", today)
+                    Logger.i("AudioStreamViewModel", "Auto disconnect at scheduled time")
+                    stopStream()
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Logger.w("AudioStreamViewModel", "Auto disconnect ticker error: ${e.message}")
+                }
+            }
+        }
     }
 
     private fun loadSettings() {

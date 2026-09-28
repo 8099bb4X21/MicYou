@@ -61,6 +61,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -75,6 +76,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -331,6 +333,55 @@ private fun LazyListScope.generalSettingsItems(
                 hazeState = hazeState,
                 enableHaze = enableHaze
             )
+        }
+
+        items.add { isFirst, isLast ->
+            ExpressiveSettingsSwitchItem(
+                headline = stringResource(R.string.autoDisconnectLabel),
+                supporting = stringResource(R.string.autoDisconnectDesc),
+                checked = state.autoDisconnectEnabled,
+                onCheckedChange = { viewModel.setAutoDisconnectEnabled(it) },
+                isFirst = isFirst,
+                isLast = isLast,
+                containerColor = containerColor,
+                hazeState = hazeState,
+                enableHaze = enableHaze
+            )
+        }
+
+        items.add { isFirst, isLast ->
+            val context = LocalContext.current
+            val timeText = "%02d:%02d".format(state.autoDisconnectHour, state.autoDisconnectMinute)
+            Surface(
+                shape = MaterialTheme.shapes.medium,
+                color = containerColor,
+                modifier = Modifier.fillMaxWidth().clickable {
+                    android.app.TimePickerDialog(
+                        context,
+                        { _, h, m -> viewModel.setAutoDisconnectTime(h, m) },
+                        state.autoDisconnectHour,
+                        state.autoDisconnectMinute,
+                        true
+                    ).show()
+                }
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        stringResource(R.string.autoDisconnectTimeLabel),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        timeText,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
         }
 
         items.add { isFirst, isLast ->

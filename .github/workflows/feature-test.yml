@@ -45,7 +45,19 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./gradlew :composeApp:assembleRelease
+        # 阿里云镜像偶发502，重试3次（真编译错误会连挂3次，届时看日志修代码）
+        run: |
+          for attempt in 1 2 3; do
+            echo "Build attempt $attempt/3"
+            if ./gradlew :composeApp:assembleRelease; then
+              echo "Build succeeded on attempt $attempt"
+              exit 0
+            fi
+            echo "::warning::Build attempt $attempt failed, retrying in 20s..."
+            sleep 20
+          done
+          echo "::error::Build failed after 3 attempts"
+          exit 1
       - name: Prepare Android Artifact
         run: |
           mkdir -p ci-artifacts

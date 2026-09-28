@@ -156,6 +156,13 @@
     <string name="volumeKeysSendRemoteKeyLabel">音量键发送右Alt+空格</string>
     <string name="volumeKeysSendRemoteKeyDesc">连接中按音量上下键即按住电脑右Alt+空格，不再调手机音量</string>
     <string name="remoteKeyEnter">回车</string>
+    <string name="statusIdle">未连接</string>
+    <string name="statusConnecting">连接中…</string>
+    <string name="statusStreaming">已连接 · %1$s:%2$s</string>
+    <string name="statusError">连接异常</string>
+    <string name="autoDisconnectLabel">每天定时断开</string>
+    <string name="autoDisconnectDesc">每天到点自动停止串流，当天只执行一次</string>
+    <string name="autoDisconnectTimeLabel">断开时间</string>
     <string name="languageLabel">语言</string>
     
     <string name="licensesTitle">开源库和许可证</string>
@@ -244,11 +251,6 @@
     <string name="settingsTitle">设置</string>
     <string name="softwareIntro">软件介绍</string>
     <string name="start">开始</string>
-    <string name="statusConnecting">连接中...</string>
-    <string name="statusError">错误</string>
-    <string name="statusIdle">空闲</string>
-    <string name="statusLabel">状态: </string>
-    <string name="statusStreaming">正在传输</string>
     <string name="stop">停止</string>
     <string name="systemConfigTitle">系统配置中</string>
     <string name="targetIpLabel">目标 IP</string>

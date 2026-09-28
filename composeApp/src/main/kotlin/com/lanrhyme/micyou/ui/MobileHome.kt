@@ -716,23 +716,8 @@ private fun MainControlCard(
                 }
             }
 
-            // Audio visualizer
-            if (isRunning) {
-                MobileAudioVisualizer(
-                    modifier = Modifier.size(140.dp),
-                    audioLevel = audioLevel,
-                    color = MaterialTheme.colorScheme.primary,
-                    style = state.visualizerStyle
-                )
-            }
-            
-            // Connecting animation
-            if (isConnecting) {
-                ConnectingAnimation(
-                    modifier = Modifier.size(140.dp),
-                    color = MaterialTheme.colorScheme.secondary
-                )
-            }
+            // Static text status (no animation)
+            MobileStatusText(state = state)
             
             // Main button
             MobileMainButton(
@@ -905,6 +890,31 @@ private fun MobileMuteButton(
             )
         }
     }
+}
+
+// ==================== Static Status Text ====================
+
+@Composable
+private fun MobileStatusText(state: AppUiState) {
+    val text = when (state.streamState) {
+        StreamState.Streaming -> stringResource(R.string.statusStreaming, state.ipAddress, state.port)
+        StreamState.Connecting -> stringResource(R.string.statusConnecting)
+        StreamState.Error -> stringResource(R.string.statusError)
+        else -> stringResource(R.string.statusIdle)
+    }
+    val color = when (state.streamState) {
+        StreamState.Streaming -> MaterialTheme.colorScheme.primary
+        StreamState.Connecting -> MaterialTheme.colorScheme.tertiary
+        StreamState.Error -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    Text(
+        text,
+        style = MaterialTheme.typography.labelLarge,
+        color = color,
+        modifier = Modifier.padding(vertical = 12.dp),
+        textAlign = TextAlign.Center
+    )
 }
 
 // ==================== Audio Visualizers ====================

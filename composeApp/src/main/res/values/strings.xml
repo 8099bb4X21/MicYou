@@ -190,6 +190,10 @@
     <string name="volumeKeysSendRemoteKeyLabel">Volume Keys Send RAlt+Space</string>
     <string name="volumeKeysSendRemoteKeyDesc">While streaming, volume up/down buttons press and hold RAlt+Space on the PC instead of adjusting volume</string>
     <string name="remoteKeyEnter">Enter</string>
+    <string name="statusIdle">Idle</string>
+    <string name="statusConnecting">Connecting…</string>
+    <string name="statusStreaming">Connected · %1$s:%2$s</string>
+    <string name="statusError">Error</string>
     <string name="languageLabel">Language</string>
     
     <string name="licensesTitle">Open Source Libraries and Licenses</string>
@@ -278,11 +282,6 @@
     <string name="settingsTitle">Settings</string>
     <string name="softwareIntro">Introduction</string>
     <string name="start">Start</string>
-    <string name="statusConnecting">Connecting...</string>
-    <string name="statusError">Error</string>
-    <string name="statusIdle">Idle</string>
-    <string name="statusLabel">Status: </string>
-    <string name="statusStreaming">Streaming</string>
     <string name="stop">Stop</string>
     <string name="systemConfigTitle">System Configuration</string>
     <string name="targetIpLabel">Target IP</string>

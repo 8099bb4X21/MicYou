@@ -46,6 +46,9 @@ data class SettingsUiState(
     val autoStart: Boolean = false,
     val keepScreenOn: Boolean = false,
     val volumeKeysSendRemoteKey: Boolean = true,
+    val autoDisconnectEnabled: Boolean = false,
+    val autoDisconnectHour: Int = 23,
+    val autoDisconnectMinute: Int = 0,
     val autoCheckUpdate: Boolean = true,
     val useMirrorDownload: Boolean = false,
     val mirrorCdk: String = "",
@@ -83,6 +86,9 @@ class SettingsViewModel : ViewModel() {
     val savedAutoStart = settings.getBoolean("auto_start", false)
     val savedKeepScreenOn = settings.getBoolean("keep_screen_on", false)
     val savedVolumeKeysSendRemoteKey = settings.getBoolean("volume_keys_send_remote_key", true)
+    val savedAutoDisconnectEnabled = settings.getBoolean("auto_disconnect_enabled", false)
+    val savedAutoDisconnectHour = settings.getInt("auto_disconnect_hour", 23)
+    val savedAutoDisconnectMinute = settings.getInt("auto_disconnect_minute", 0)
     val savedVisualizerStyleName = settings.getString("visualizer_style", VisualizerStyle.VolumeRing.name)
     val savedVisualizerStyle = try {
             VisualizerStyle.valueOf(savedVisualizerStyleName)
@@ -115,6 +121,9 @@ class SettingsViewModel : ViewModel() {
                 autoStart = savedAutoStart,
                 keepScreenOn = savedKeepScreenOn,
                 volumeKeysSendRemoteKey = savedVolumeKeysSendRemoteKey,
+                autoDisconnectEnabled = savedAutoDisconnectEnabled,
+                autoDisconnectHour = savedAutoDisconnectHour,
+                autoDisconnectMinute = savedAutoDisconnectMinute,
                 visualizerStyle = savedVisualizerStyle,
                 backgroundSettings = BackgroundSettings(
                     imagePath = savedBackgroundImagePath,
@@ -180,6 +189,19 @@ class SettingsViewModel : ViewModel() {
     fun setVolumeKeysSendRemoteKey(enabled: Boolean) {
         _uiState.update { it.copy(volumeKeysSendRemoteKey = enabled) }
         settings.putBoolean("volume_keys_send_remote_key", enabled)
+    }
+
+    fun setAutoDisconnectEnabled(enabled: Boolean) {
+        _uiState.update { it.copy(autoDisconnectEnabled = enabled) }
+        settings.putBoolean("auto_disconnect_enabled", enabled)
+    }
+
+    fun setAutoDisconnectTime(hour: Int, minute: Int) {
+        val h = hour.coerceIn(0, 23)
+        val m = minute.coerceIn(0, 59)
+        _uiState.update { it.copy(autoDisconnectHour = h, autoDisconnectMinute = m) }
+        settings.putInt("auto_disconnect_hour", h)
+        settings.putInt("auto_disconnect_minute", m)
     }
 
     fun setVisualizerStyle(style: VisualizerStyle) {
