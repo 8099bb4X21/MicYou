@@ -383,6 +383,10 @@
       "title": "防火墙阻止了 UDP 音频连接",
       "desc": "手机端已成功连接，但电脑端未能收到任何 UDP 音频数据，这通常是因为 Windows 防火墙拦截了 UDP 端口 ({port})\n\n请在防火墙中允许 MicYou 程序的网络访问，或者尝试以管理员身份重新运行程序",
       "allowButton": "一键放行防火墙 (TCP & UDP)"
+    },
+    "remoteKeyDriver": {
+      "title": "虚拟键盘驱动缺失",
+      "desc": "手机发来了远程按键，但本机 WinUHid 虚拟键盘不可用，按键已丢弃。\n\n请安装 WinUHid 驱动（Windows 10 用 UMDF 2.15 构建版）并重启后再试。"
     }
   },
   "tray": {

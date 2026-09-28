@@ -30,6 +30,7 @@ import PocketLayout from './features/pocket/components/PocketLayout.vue';
 import CustomBackground from './shared/components/CustomBackground.vue';
 import CloseConfirmDialog from './shared/components/CloseConfirmDialog.vue';
 import UdpWarningDialog from './shared/components/UdpWarningDialog.vue';
+import RemoteKeyDriverDialog from './shared/components/RemoteKeyDriverDialog.vue';
 import MonitoringWarningDialog from './shared/components/MonitoringWarningDialog.vue';
 
 // Raw asset content and animation utilities
@@ -634,6 +635,11 @@ onUnmounted(() => {
       :show="audio.showUdpWarning.value"
       :port="Number(server.serverPort.value) + 1"
       @close="audio.showUdpWarning.value = false"
+    />
+
+    <RemoteKeyDriverDialog
+      :show="audio.showRemoteKeyDriverWarning.value"
+      @close="audio.showRemoteKeyDriverWarning.value = false"
     />
 
     <MonitoringWarningDialog

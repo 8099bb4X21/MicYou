@@ -723,12 +723,60 @@ async fn handle_message(
         }
     }
     if let Some(plugin_message) = msg.plugin_message {
+        // 远程按键：手机双键 key-event 本地处理（WinUHid 注入），同时继续走插件总线便于观察。
+        if plugin_message.source == "remote-key" && plugin_message.topic == "key-event" {
+            handle_remote_key(&plugin_message.payload, events);
+        }
         // Cross-device plugin message: route to the bus (local plugins via the
         // dispatcher, pending RPCs via correlation id).
         let logical = micyou_plugin::sync::from_wire(&plugin_message);
         plugins.bus.handle_incoming(&logical);
     }
     Ok(())
+}
+
+/// 处理手机远程按键：payload 2 字节 [keyId, action]，keyId 1=右Alt 2=右Alt+空格，action 0=按下 1=松开。
+/// Q3 结论：无 WinUHid 时硬阻塞并经 events 提示，不做 SendInput 降级。
+fn handle_remote_key(payload: &[u8], events: &SharedEvents) {
+    #[cfg(target_os = "windows")]
+    {
+        handle_remote_key_windows(payload, events);
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = (payload, events);
+        log::warn!("remote-key: only supported on Windows, key event dropped");
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn handle_remote_key_windows(payload: &[u8], events: &SharedEvents) {
+    if payload.len() != 2 {
+        log::warn!("remote-key: bad payload len {}", payload.len());
+        return;
+    }
+    let key_id = payload[0];
+    let action = payload[1];
+    let Some(vks) = crate::remote_key::vks_for_key(key_id) else {
+        log::warn!("remote-key: unknown key_id {key_id}");
+        return;
+    };
+    if !crate::remote_key::is_available() {
+        log::warn!("remote-key: WinUHid unavailable, key event dropped");
+        events.remote_key_driver_missing();
+        return;
+    }
+    let result = match action {
+        crate::remote_key::ACTION_DOWN => crate::remote_key::press(&vks),
+        crate::remote_key::ACTION_UP => crate::remote_key::release(&vks),
+        _ => {
+            log::warn!("remote-key: unknown action {action}");
+            return;
+        }
+    };
+    if let Err(e) = result {
+        log::warn!("remote-key inject failed: {e}");
+    }
 }
 
 #[cfg(test)]

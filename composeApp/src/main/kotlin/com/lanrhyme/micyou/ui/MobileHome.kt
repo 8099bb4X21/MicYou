@@ -39,6 +39,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -93,6 +94,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -133,6 +135,8 @@ import com.lanrhyme.micyou.viewmodel.ConnectionMode
 import com.lanrhyme.micyou.viewmodel.MainViewModel
 import com.lanrhyme.micyou.viewmodel.StreamState
 import com.lanrhyme.micyou.viewmodel.VisualizerStyle
+import com.lanrhyme.micyou.network.REMOTE_KEY_ALT_SPACE
+import com.lanrhyme.micyou.network.REMOTE_KEY_RALT
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -765,6 +769,18 @@ private fun MobileBottomBar(
                     isMuted = state.isMuted,
                     onToggle = { viewModel.toggleMute() }
                 )
+                MobileRemoteKeyButton(
+                    label = stringResource(R.string.remoteKeyRalt),
+                    enabled = state.streamState == StreamState.Streaming,
+                    onDown = { viewModel.remoteKeyDown(REMOTE_KEY_RALT) },
+                    onUp = { viewModel.remoteKeyUp(REMOTE_KEY_RALT) }
+                )
+                MobileRemoteKeyButton(
+                    label = stringResource(R.string.remoteKeyAltSpace),
+                    enabled = state.streamState == StreamState.Streaming,
+                    onDown = { viewModel.remoteKeyDown(REMOTE_KEY_ALT_SPACE) },
+                    onUp = { viewModel.remoteKeyUp(REMOTE_KEY_ALT_SPACE) }
+                )
             }
             
             val dotColor by animateColorAsState(
@@ -784,6 +800,55 @@ private fun MobileBottomBar(
                 color = dotColor,
                 modifier = Modifier.size(8.dp).scale(dotPulse)
             ) {}
+        }
+    }
+}
+
+@Composable
+private fun MobileRemoteKeyButton(
+    label: String,
+    enabled: Boolean,
+    onDown: () -> Unit,
+    onUp: () -> Unit
+) {
+    val bgColor by animateColorAsState(
+        targetValue = if (enabled) MaterialTheme.colorScheme.surfaceContainerHighest
+        else MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.4f),
+        animationSpec = tween(200)
+    )
+    val contentColor by animateColorAsState(
+        targetValue = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
+        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+        animationSpec = tween(200)
+    )
+
+    Surface(
+        shape = MaterialTheme.shapes.small,
+        color = bgColor,
+        modifier = Modifier.pointerInput(enabled) {
+            if (!enabled) return@pointerInput
+            detectTapGestures(
+                onPress = {
+                    onDown()
+                    try {
+                        awaitRelease()
+                    } finally {
+                        onUp()
+                    }
+                }
+            )
+        }
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                label,
+                style = MaterialTheme.typography.labelMedium,
+                color = contentColor
+            )
         }
     }
 }

@@ -201,6 +201,19 @@ class AudioStreamViewModel : ViewModel() {
         }
     }
 
+    /** 远程按键按下/松开（双键共用，keyId 1=右Alt 2=右Alt+空格）。 */
+    fun remoteKeyDown(keyId: Int) {
+        auxiliaryScope.launch {
+            _audioEngine.sendRemoteKey(keyId, true)
+        }
+    }
+
+    fun remoteKeyUp(keyId: Int) {
+        auxiliaryScope.launch {
+            _audioEngine.sendRemoteKey(keyId, false)
+        }
+    }
+
     fun startStream() {
         if (isStartStreamRequestPending ||
             isStopStreamRequestPending ||

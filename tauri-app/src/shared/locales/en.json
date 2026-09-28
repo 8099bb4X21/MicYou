@@ -383,6 +383,10 @@
       "title": "Firewall Blocked UDP Connection",
       "desc": "The mobile app connected successfully, but the PC didn't receive any UDP audio data. This is usually because Windows Firewall is blocking the UDP port ({port}).\n\nPlease allow network access for MicYou in your firewall, or try running the app as Administrator.",
       "allowButton": "Allow via Firewall (TCP & UDP)"
+    },
+    "remoteKeyDriver": {
+      "title": "Virtual keyboard driver missing",
+      "desc": "The phone sent a remote key press, but the WinUHid virtual keyboard is not available on this PC, so the key was dropped.\n\nPlease install the WinUHid driver (UMDF 2.15 build for Windows 10) and restart, then try again."
     }
   },
   "tray": {

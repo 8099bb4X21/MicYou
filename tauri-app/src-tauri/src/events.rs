@@ -38,6 +38,8 @@ pub trait ServerEvents: Send + Sync + 'static {
     fn install_progress(&self, message: String);
     fn aec_status_changed(&self, status: AecStatus);
     fn monitoring_state_changed(&self, _enabled: bool) {}
+    /// 手机远程按键到达但 WinUHid 虚拟键盘不可用（Q3：硬阻塞并提示）。
+    fn remote_key_driver_missing(&self) {}
 }
 
 #[derive(serde::Serialize, Clone, Debug)]
@@ -92,5 +94,9 @@ impl ServerEvents for TauriEventSink {
 
     fn monitoring_state_changed(&self, enabled: bool) {
         let _ = self.0.emit("monitoring-enabled-changed", enabled);
+    }
+
+    fn remote_key_driver_missing(&self) {
+        let _ = self.0.emit("remote-key-driver-missing", ());
     }
 }

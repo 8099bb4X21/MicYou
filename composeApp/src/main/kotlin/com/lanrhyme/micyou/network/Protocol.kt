@@ -118,6 +118,71 @@ data class PongMessage(
     val timestamp: Long
 )
 
+// 跨端插件消息（对齐 tauri-app/crates/micyou-protocol/proto/network.proto field 7）。
+// 远程按键复用该通道：source="remote-key"，topic="key-event"，
+// payload 2 字节：[keyId, action]，keyId 1=右Alt 2=右Alt+空格，action 0=按下 1=松开。
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+data class PluginMessage(
+    @ProtoNumber(1)
+    val source: String = "",
+    @ProtoNumber(2)
+    val target: String = "",
+    @ProtoNumber(3)
+    val topic: String = "",
+    @ProtoNumber(4)
+    val payload: ByteArray = byteArrayOf(),
+    @ProtoNumber(5)
+    val correlationId: Long = 0,
+    @ProtoNumber(6)
+    val isResponse: Boolean = false,
+    @ProtoNumber(7)
+    val errorCode: Int = 0,
+    @ProtoNumber(8)
+    val errorMessage: String = ""
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as PluginMessage
+
+        if (source != other.source) return false
+        if (target != other.target) return false
+        if (topic != other.topic) return false
+        if (!payload.contentEquals(other.payload)) return false
+        if (correlationId != other.correlationId) return false
+        if (isResponse != other.isResponse) return false
+        if (errorCode != other.errorCode) return false
+        if (errorMessage != other.errorMessage) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = source.hashCode()
+        result = 31 * result + target.hashCode()
+        result = 31 * result + topic.hashCode()
+        result = 31 * result + payload.contentHashCode()
+        result = 31 * result + correlationId.hashCode()
+        result = 31 * result + isResponse.hashCode()
+        result = 31 * result + errorCode
+        result = 31 * result + errorMessage.hashCode()
+        return result
+    }
+}
+
+/** 远程按键 keyId：1=右Alt，2=右Alt+空格 */
+const val REMOTE_KEY_RALT = 1
+const val REMOTE_KEY_ALT_SPACE = 2
+
+/** 远程按键 action：0=按下，1=松开 */
+const val REMOTE_KEY_DOWN = 0
+const val REMOTE_KEY_UP = 1
+
+const val REMOTE_KEY_SOURCE = "remote-key"
+const val REMOTE_KEY_TOPIC = "key-event"
+
 const val PACKET_MAGIC = 0x4D696359 // "MicY" in ASCII
 const val UDP_PACKET_MAGIC = 0x4D696355 // "MicU" in ASCII
 const val UDP_CUSTOM_HEADER_SIZE = 8
@@ -148,7 +213,7 @@ fun calculateUdpPort(tcpPort: Int): Int {
 
 /** 判断 MessageWrapper 是否包含控制消息（应通过 TCP 发送） */
 fun MessageWrapper.hasControlMessage(): Boolean {
-    return connect != null || mute != null || ping != null || pong != null
+    return connect != null || mute != null || ping != null || pong != null || pluginMessage != null
 }
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -163,5 +228,7 @@ data class MessageWrapper(
     @ProtoNumber(5)
     val ping: PingMessage? = null,
     @ProtoNumber(6)
-    val pong: PongMessage? = null
+    val pong: PongMessage? = null,
+    @ProtoNumber(7)
+    val pluginMessage: PluginMessage? = null
 )

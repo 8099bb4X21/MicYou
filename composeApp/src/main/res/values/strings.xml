@@ -211,6 +211,8 @@
     
     
     <string name="muteLabel">Mute</string>
+    <string name="remoteKeyRalt">R-Alt</string>
+    <string name="remoteKeyAltSpace">RAlt+Space</string>
     <string name="newVersionReleased">New version released</string>
     <string name="noGeneralSettings">No general settings available</string>
     

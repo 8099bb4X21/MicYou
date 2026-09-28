@@ -38,6 +38,9 @@ export function useAudio() {
   // Flag indicating if the UDP port fallback warning should be displayed
   const showUdpWarning = ref(false);
 
+  // 手机远程按键到达但 WinUHid 虚拟键盘不可用（硬阻塞提示）
+  const showRemoteKeyDriverWarning = ref(false);
+
   // Flag and storage for earback / monitoring warning dialog
   const showMonitoringWarning = ref(false);
   const dontShowMonitoringWarning = useStorage('micyou_dont_show_monitoring_warning', false);
@@ -47,6 +50,7 @@ export function useAudio() {
   let unlistenMuteState: UnlistenFn | null = null;
   let unlistenMonitoringState: UnlistenFn | null = null;
   let unlistenUdpWarning: UnlistenFn | null = null;
+  let unlistenRemoteKeyDriver: UnlistenFn | null = null;
   let unlistenDeviceDisconnected: UnlistenFn | null = null;
   let unlistenServerStopped: UnlistenFn | null = null;
 
@@ -142,13 +146,20 @@ export function useAudio() {
       }
     });
 
+    // Remote key pressed on phone but WinUHid virtual keyboard is missing (hard block + prompt)
+    unlistenRemoteKeyDriver = await listen('remote-key-driver-missing', () => {
+      showRemoteKeyDriverWarning.value = true;
+    });
+
     // Automatically dismiss warning if client disconnects or server stops
     unlistenDeviceDisconnected = await listen('device-disconnected', () => {
       showUdpWarning.value = false;
+      showRemoteKeyDriverWarning.value = false;
     });
 
     unlistenServerStopped = await listen('server-stopped', () => {
       showUdpWarning.value = false;
+      showRemoteKeyDriverWarning.value = false;
     });
   });
 
@@ -158,6 +169,7 @@ export function useAudio() {
     if (unlistenMuteState) unlistenMuteState();
     if (unlistenMonitoringState) unlistenMonitoringState();
     if (unlistenUdpWarning) unlistenUdpWarning();
+    if (unlistenRemoteKeyDriver) unlistenRemoteKeyDriver();
     if (unlistenDeviceDisconnected) unlistenDeviceDisconnected();
     if (unlistenServerStopped) unlistenServerStopped();
   });
@@ -169,6 +181,7 @@ export function useAudio() {
     audioMetrics,
     showMonitoringPanel,
     showUdpWarning,
+    showRemoteKeyDriverWarning,
     showMonitoringWarning,
     toggleMute,
     toggleMonitoringEnabled,

@@ -94,7 +94,10 @@ import com.lanrhyme.micyou.viewmodel.StreamState
 import com.lanrhyme.micyou.viewmodel.TransportProtocol
 import com.lanrhyme.micyou.network.hasControlMessage
 import com.lanrhyme.micyou.network.MuteMessage
+import com.lanrhyme.micyou.network.PluginMessage
 import com.lanrhyme.micyou.network.PongMessage
+import com.lanrhyme.micyou.network.REMOTE_KEY_SOURCE
+import com.lanrhyme.micyou.network.REMOTE_KEY_TOPIC
 /**
  * Converts OutputStream to ByteWriteChannel using the current coroutine context.
  */
@@ -1499,6 +1502,32 @@ class AudioEngine constructor() {
              } catch (e: Exception) {
                  Logger.e("AudioEngine", "Failed to send mute message: ${e.message}")
              }
+        }
+    }
+
+    /**
+     * 发送远程按键事件（走 TCP 控制通道，复用 mute 同款 sendChannel）。
+     * @param keyId REMOTE_KEY_RALT=1 右Alt，REMOTE_KEY_ALT_SPACE=2 右Alt+空格
+     * @param pressed true=按下，false=松开
+     */
+    suspend fun sendRemoteKey(keyId: Int, pressed: Boolean) {
+        if (_state.value == StreamState.Streaming || _state.value == StreamState.Connecting) {
+            try {
+                val payload = byteArrayOf(keyId.toByte(), if (pressed) 0 else 1)
+                sendChannel?.send(
+                    MessageWrapper(
+                        pluginMessage = PluginMessage(
+                            source = REMOTE_KEY_SOURCE,
+                            topic = REMOTE_KEY_TOPIC,
+                            payload = payload
+                        )
+                    )
+                )
+            } catch (e: Exception) {
+                Logger.e("AudioEngine", "Failed to send remote key message: ${e.message}")
+            }
+        } else {
+            Logger.w("AudioEngine", "Ignore remote key: not streaming")
         }
     }
 
