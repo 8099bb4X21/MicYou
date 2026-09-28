@@ -96,6 +96,8 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -467,6 +469,7 @@ private fun ConnectionConfigCard(
                 Column(
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                     modifier = Modifier.testTag("home_device_section")
+                        .semantics { contentDescription = "home_device_section" }
                 ) {
                     // Header row: label + refresh button
                     Row(
@@ -496,9 +499,10 @@ private fun ConnectionConfigCard(
                         IconButton(
                             onClick = { viewModel.restartDiscovery() },
                             modifier = Modifier.size(32.dp).testTag("home_refresh")
+                                .semantics { contentDescription = "home_refresh" }
                         ) {
                             Icon(
-                                Icons.Filled.Refresh, null,
+                                Icons.Filled.Refresh, "home_refresh",
                                 modifier = Modifier.size(18.dp),
                                 tint = MaterialTheme.colorScheme.primary
                             )
@@ -512,7 +516,8 @@ private fun ConnectionConfigCard(
                             shape = MaterialTheme.shapes.small,
                             color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
                             else MaterialTheme.colorScheme.surfaceContainerHigh,
-                            modifier = Modifier.fillMaxWidth().testTag("home_device_row").clickable {
+                            modifier = Modifier.fillMaxWidth().testTag("home_device_row")
+                                .semantics { contentDescription = "home_device_row" }.clickable {
                                 viewModel.selectDiscoveredDevice(device)
                             }
                         ) {
@@ -695,7 +700,8 @@ private fun MobileRemoteKeyButton(
     Surface(
         shape = MaterialTheme.shapes.small,
         color = bgColor,
-        modifier = Modifier.testTag(testTag).pointerInput(enabled) {
+        modifier = Modifier.testTag(testTag)
+            .semantics { contentDescription = testTag }.pointerInput(enabled) {
             if (!enabled) return@pointerInput
             detectTapGestures(
                 onPress = {
@@ -748,7 +754,8 @@ private fun MobileMuteButton(
     Surface(
         shape = MaterialTheme.shapes.small,
         color = bgColor,
-        modifier = Modifier.scale(scale).testTag("home_mute").clickable(interactionSource, null) { onToggle() }
+        modifier = Modifier.scale(scale).testTag("home_mute")
+            .semantics { contentDescription = "home_mute" }.clickable(interactionSource, null) { onToggle() }
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
@@ -790,7 +797,8 @@ private fun MobileStatusText(state: AppUiState) {
         text,
         style = MaterialTheme.typography.labelLarge,
         color = color,
-        modifier = Modifier.padding(vertical = 12.dp).testTag("home_status_text"),
+        modifier = Modifier.padding(vertical = 12.dp).testTag("home_status_text")
+            .semantics { contentDescription = "home_status_text" },
         textAlign = TextAlign.Center
     )
 }
@@ -855,6 +863,7 @@ private fun MobileMainButton(
         },
         colors = ButtonDefaults.buttonColors(containerColor = containerColor),
         modifier = Modifier.testTag("home_main_button")
+            .semantics { contentDescription = "home_main_button" }
     ) {
         Text(label)
     }
