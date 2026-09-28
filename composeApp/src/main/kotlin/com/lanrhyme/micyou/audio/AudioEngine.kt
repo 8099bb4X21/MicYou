@@ -98,7 +98,6 @@ import com.lanrhyme.micyou.network.PluginMessage
 import com.lanrhyme.micyou.network.PongMessage
 import com.lanrhyme.micyou.network.REMOTE_KEY_SOURCE
 import com.lanrhyme.micyou.network.REMOTE_KEY_TOPIC
-import com.lanrhyme.micyou.service.RemoteKeyBus
 /**
  * Converts OutputStream to ByteWriteChannel using the current coroutine context.
  */
@@ -371,21 +370,6 @@ class AudioEngine constructor() {
     private val _state = MutableStateFlow(StreamState.Idle)
     val streamState: Flow<StreamState> = _state
 
-    /**
-     * 状态唯一出口：同步维护远程按键总线，发送器与采集引擎同生死，
-     * 不依赖 Activity/ViewModel 存活（灭屏/后台无障碍按键靠它）。
-     */
-    private fun updateStreamState(state: StreamState) {
-        _state.value = state
-        if (state == StreamState.Streaming) {
-            RemoteKeyBus.sender = { keyId, pressed ->
-                lifecycleScope.launch { sendRemoteKey(keyId, pressed) }
-            }
-        } else if (state == StreamState.Idle || state == StreamState.Error) {
-            RemoteKeyBus.sender = null
-        }
-    }
-
     fun currentStreamState(): StreamState = _state.value
     private val _audioLevels = MutableStateFlow(0f)
     val audioLevels: Flow<Float> = _audioLevels
@@ -533,7 +517,7 @@ class AudioEngine constructor() {
                 } else {
                     lifecycleGeneration++
                     val sessionGeneration = lifecycleGeneration
-                    updateStreamState(StreamState.Connecting)
+                    _state.value = StreamState.Connecting
                     val sessionJob = lifecycleScope.launch(start = CoroutineStart.LAZY) {
                     var recorder: AudioRecord? = null
                     var sessionUdpSocket: DatagramSocket? = null
@@ -765,7 +749,7 @@ class AudioEngine constructor() {
                         if (lifecycleGeneration != sessionGeneration || !desiredRunning) {
                             throw CancellationException("Audio session superseded while recording started")
                         }
-                        updateStreamState(StreamState.Streaming)
+                        _state.value = StreamState.Streaming
                         _lastError.value = null
                         connectionComplete.complete(Unit)
 
@@ -1058,7 +1042,7 @@ class AudioEngine constructor() {
                         }
                         Logger.e("AudioEngine", "Connection lost", e)
                         if (lifecycleGeneration == sessionGeneration) {
-                            updateStreamState(StreamState.Error)
+                            _state.value = StreamState.Error
                             _lastError.value = errorMsg
                         }
                         connectionComplete.completeExceptionally(Exception(errorMsg, e))
@@ -1112,7 +1096,7 @@ class AudioEngine constructor() {
                             if (automaticGainControl === sessionAutomaticGainControl) automaticGainControl = null
                             if (job === sessionJobIdentity) job = null
                             if (lifecycleGeneration == sessionGeneration) {
-                                if (_state.value != StreamState.Error) updateStreamState(StreamState.Idle)
+                                if (_state.value != StreamState.Error) _state.value = StreamState.Idle
                             }
                         }
 
@@ -1152,7 +1136,7 @@ class AudioEngine constructor() {
                                 udpSocket,
                                 sendChannel
                             )
-                            updateStreamState(StreamState.Error)
+                            _state.value = StreamState.Error
                             _lastError.value = error.message
                         }
                     }
@@ -1414,7 +1398,7 @@ class AudioEngine constructor() {
                 stopTimedOutJob = stopCompletionJob
                 stopTimedOutResources = resources
                 if (lifecycleGeneration == stopGeneration && (userInitiated || !desiredRunning)) {
-                    updateStreamState(StreamState.Error)
+                    _state.value = StreamState.Error
                     _lastError.value = "AudioEngine stop timed out after $STOP_TIMEOUT_MS ms"
                 }
             }
@@ -1456,7 +1440,7 @@ class AudioEngine constructor() {
                 }
                 if (sendChannel === resources.channel) sendChannel = null
             }
-            updateStreamState(StreamState.Error)
+            _state.value = StreamState.Error
             _lastError.value = timeoutMessage
         }
         if (resources?.sessionJob != null && resources.recorder != null &&
@@ -1490,7 +1474,7 @@ class AudioEngine constructor() {
                 if (sendChannel === resources.channel) sendChannel = null
             }
             if (userInitiated || !desiredRunning) {
-                updateStreamState(StreamState.Idle)
+                _state.value = StreamState.Idle
             }
         }
         if (userInitiated && resources?.sessionJob != null && resources.recorder != null &&

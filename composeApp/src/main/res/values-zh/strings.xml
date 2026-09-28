@@ -153,8 +153,8 @@
     <string name="isLatestVersion">当前已是最新版本</string>
     <string name="keepScreenOnDesc">使用应用时防止屏幕自动熄灭</string>
     <string name="keepScreenOnLabel">保持屏幕常亮</string>
-    <string name="volumeKeysSendRemoteKeyLabel">音量键发送右Alt+空格</string>
-    <string name="volumeKeysSendRemoteKeyDesc">连接中按音量上下键即按住电脑右Alt+空格，不再调手机音量</string>
+    <string name="volumeKeysSendRemoteKeyLabel">音量键发送电脑按键</string>
+    <string name="volumeKeysSendRemoteKeyDesc">连接中按音量上即按住电脑右Alt+空格、音量下即按住回车，不再调手机音量</string>
     <string name="remoteKeyEnter">回车</string>
     <string name="statusIdle">未连接</string>
     <string name="statusConnecting">连接中…</string>
@@ -163,10 +163,6 @@
     <string name="autoDisconnectLabel">每天定时断开</string>
     <string name="autoDisconnectDesc">每天到点自动停止串流，当天只执行一次</string>
     <string name="autoDisconnectTimeLabel">断开时间</string>
-    <string name="a11yServiceLabel">无障碍按键（灭屏可用）</string>
-    <string name="a11yServiceDesc">灭屏或后台时音量键仍可发送，点击去系统设置开启。</string>
-    <string name="a11y_service_label">MicYou音量键</string>
-    <string name="a11y_service_desc">允许MicYou用音量键向电脑发送右Alt+空格，灭屏时也能用。</string>
     <string name="languageLabel">语言</string>
     
     <string name="licensesTitle">开源库和许可证</string>

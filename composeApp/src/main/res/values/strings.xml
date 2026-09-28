@@ -187,8 +187,8 @@
     <string name="isLatestVersion">Already the latest version</string>
     <string name="keepScreenOnDesc">Prevent the screen from turning off while using the app</string>
     <string name="keepScreenOnLabel">Keep Screen On</string>
-    <string name="volumeKeysSendRemoteKeyLabel">Volume Keys Send RAlt+Space</string>
-    <string name="volumeKeysSendRemoteKeyDesc">While streaming, volume up/down buttons press and hold RAlt+Space on the PC instead of adjusting volume</string>
+    <string name="volumeKeysSendRemoteKeyLabel">Volume Keys Send PC Keys</string>
+    <string name="volumeKeysSendRemoteKeyDesc">While streaming, volume up holds RAlt+Space and volume down holds Enter on the PC instead of adjusting volume</string>
     <string name="remoteKeyEnter">Enter</string>
     <string name="statusIdle">Idle</string>
     <string name="statusConnecting">Connecting…</string>
@@ -197,10 +197,6 @@
     <string name="autoDisconnectLabel">Auto Disconnect Daily</string>
     <string name="autoDisconnectDesc">Automatically stop streaming every day at the set time</string>
     <string name="autoDisconnectTimeLabel">Disconnect Time</string>
-    <string name="a11yServiceLabel">Accessibility Keys (Screen-off)</string>
-    <string name="a11yServiceDesc">Keeps volume keys working with screen off or in background. Tap to enable in system settings.</string>
-    <string name="a11y_service_label">MicYou volume keys</string>
-    <string name="a11y_service_desc">Lets MicYou send Right Alt + Space to the PC with the volume buttons, even when the screen is off.</string>
     <string name="languageLabel">Language</string>
     
     <string name="licensesTitle">Open Source Libraries and Licenses</string>

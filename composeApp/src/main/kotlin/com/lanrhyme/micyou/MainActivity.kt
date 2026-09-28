@@ -41,7 +41,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lanrhyme.micyou.audio.AudioEngine
 import com.lanrhyme.micyou.network.REMOTE_KEY_ALT_SPACE
-import com.lanrhyme.micyou.service.RemoteKeyBus
+import com.lanrhyme.micyou.network.REMOTE_KEY_ENTER
 import com.lanrhyme.micyou.service.AudioService
 import com.lanrhyme.micyou.theme.isDarkThemeActive
 import com.lanrhyme.micyou.ui.dialog.getRequiredPermissions
@@ -99,9 +99,9 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * 音量上下键劫持为右Alt+空格（仅 Streaming 且设置开启时）。
+     * 实体音量键映射（仅前台有效；灭屏时系统直接调音量，不分发给应用）。
+     * 仅 Streaming 且设置开启时：音量上=右Alt+空格，音量下=回车；
      * 按下发 DOWN（忽略长按 repeat），松开发 UP；返回 true 吞掉系统音量调节。
-     * 仅前台有效；灭屏/后台由 MicYouKeyService（无障碍）经 RemoteKeyBus 接管。
      */
     private fun shouldHijackVolumeKeys(): Boolean {
         return try {
@@ -113,12 +113,20 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun volumeKeyId(keyCode: Int): Int {
+        return if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) REMOTE_KEY_ALT_SPACE else REMOTE_KEY_ENTER
+    }
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
         if ((keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) &&
             shouldHijackVolumeKeys()
         ) {
             if (event.repeatCount == 0) {
-                RemoteKeyBus.sender?.invoke(REMOTE_KEY_ALT_SPACE, true)
+                try {
+                    ViewModelProvider(this)[MainViewModel::class.java]
+                        .remoteKeyDown(volumeKeyId(keyCode))
+                } catch (_: Exception) {
+                }
             }
             return true
         }
@@ -134,7 +142,7 @@ class MainActivity : ComponentActivity() {
                 null
             }
             if (vm?.uiState?.value?.volumeKeysSendRemoteKey == true) {
-                RemoteKeyBus.sender?.invoke(REMOTE_KEY_ALT_SPACE, false)
+                vm.remoteKeyUp(volumeKeyId(keyCode))
                 return true
             }
         }
