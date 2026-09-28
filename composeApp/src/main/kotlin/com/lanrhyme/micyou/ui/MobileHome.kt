@@ -71,9 +71,9 @@ import androidx.compose.material.icons.rounded.MicOff
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Usb
 import androidx.compose.material.icons.rounded.Wifi
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -461,8 +461,9 @@ private fun ConnectionConfigCard(
 
 
 
-            // Discovered devices list (WiFi mode only, always visible during connection)
-            if (state.mode == ConnectionMode.Wifi) {
+            // Discovered devices list (WiFi mode only, hidden while streaming:
+            // connected already, list churn only distracts)
+            if (state.mode == ConnectionMode.Wifi && state.streamState != StreamState.Streaming) {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                     modifier = Modifier.testTag("home_device_section")
@@ -833,83 +834,28 @@ private fun MobileMainButton(
     isConnecting: Boolean,
     viewModel: MainViewModel
 ) {
-    // Static size/color by state (no animation); compact footprint.
-    val buttonSize = if (isRunning) 72.dp else 64.dp
-    val buttonColor = when {
+    // Text button: static, compact, no icon, no animation.
+    val label = when {
+        isRunning -> stringResource(R.string.stop)
+        isConnecting -> stringResource(R.string.statusConnecting)
+        else -> stringResource(R.string.start)
+    }
+    val containerColor = when {
         isRunning -> MaterialTheme.colorScheme.error
         isConnecting -> MaterialTheme.colorScheme.tertiary
         else -> MaterialTheme.colorScheme.primary
     }
-
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val pressScale by animateFloatAsState(
-        targetValue = if (isPressed) 0.88f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioHighBouncy,
-            stiffness = Spring.StiffnessMedium
-        )
-    )
-
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .size(buttonSize + 16.dp)
-            .graphicsLayer {
-                scaleX = pressScale
-                scaleY = pressScale
-            }
-    ) {
-        if (isRunning || isConnecting) {
-            Box(
-                modifier = Modifier
-                    .size(buttonSize + 16.dp)
-                    .drawBehind {
-                        drawCircle(
-                            brush = Brush.radialGradient(
-                                colors = listOf(
-                                    buttonColor.copy(alpha = 0.25f),
-                                    buttonColor.copy(alpha = 0f)
-                                ),
-                                center = Offset(size.width / 2, size.height / 2),
-                                radius = size.width / 2
-                            ),
-                            radius = size.width / 2
-                        )
-                    }
-            )
-        }
-        
-        FloatingActionButton(
-            onClick = {
-                if (isRunning || isConnecting) {
-                    viewModel.stopStream()
-                } else {
-                    viewModel.startStream()
-                }
-            },
-            interactionSource = interactionSource,
-            containerColor = buttonColor,
-            modifier = Modifier.size(buttonSize).testTag("home_main_button"),
-            shape = CircleShape,
-            elevation = FloatingActionButtonDefaults.elevation(
-                defaultElevation = if (isPressed) 2.dp else 8.dp,
-                pressedElevation = 2.dp
-            )
-        ) {
-            if (isConnecting) {
-                Icon(
-                    Icons.Filled.Refresh,
-                    stringResource(R.string.statusConnecting),
-                    modifier = Modifier.size(36.dp)
-                )
+    Button(
+        onClick = {
+            if (isRunning || isConnecting) {
+                viewModel.stopStream()
             } else {
-                Icon(
-                    if (isRunning) Icons.Filled.LinkOff else Icons.Filled.Link,
-                    contentDescription = if (isRunning) stringResource(R.string.stop) else stringResource(R.string.start),
-                    modifier = Modifier.size(36.dp)
-                )
+                viewModel.startStream()
             }
-        }
+        },
+        colors = ButtonDefaults.buttonColors(containerColor = containerColor),
+        modifier = Modifier.testTag("home_main_button")
+    ) {
+        Text(label)
     }
 }
