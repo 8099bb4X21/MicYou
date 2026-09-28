@@ -58,8 +58,16 @@ class MicYouKeyService : AccessibilityService() {
         } catch (_: Exception) {
             return false
         }
-        if (!prefs.getBoolean("volume_keys_send_remote_key", true)) return false
-        val send = RemoteKeyBus.sender ?: return false
+        val enabled = prefs.getBoolean("volume_keys_send_remote_key", true)
+        val send = RemoteKeyBus.sender
+        // 取证日志：灭屏事件是否到达、开关与发送器状态（logcat可查）。
+        Logger.i(
+            "MicYouKeyService",
+            "key code=${event.keyCode} action=${event.action} repeat=${event.repeatCount} " +
+                "enabled=$enabled sender=${if (send == null) "null" else "set"}"
+        )
+        if (!enabled) return false
+        if (send == null) return false
         when (event.action) {
             KeyEvent.ACTION_DOWN -> {
                 if (event.repeatCount != 0) return true
