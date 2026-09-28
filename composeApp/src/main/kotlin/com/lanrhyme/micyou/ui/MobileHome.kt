@@ -95,6 +95,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -462,7 +463,10 @@ private fun ConnectionConfigCard(
 
             // Discovered devices list (WiFi mode only, always visible during connection)
             if (state.mode == ConnectionMode.Wifi) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.testTag("home_device_section")
+                ) {
                     // Header row: label + refresh button
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -490,7 +494,7 @@ private fun ConnectionConfigCard(
                         }
                         IconButton(
                             onClick = { viewModel.restartDiscovery() },
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(32.dp).testTag("home_refresh")
                         ) {
                             Icon(
                                 Icons.Filled.Refresh, null,
@@ -507,7 +511,7 @@ private fun ConnectionConfigCard(
                             shape = MaterialTheme.shapes.small,
                             color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
                             else MaterialTheme.colorScheme.surfaceContainerHigh,
-                            modifier = Modifier.fillMaxWidth().clickable {
+                            modifier = Modifier.fillMaxWidth().testTag("home_device_row").clickable {
                                 viewModel.selectDiscoveredDevice(device)
                             }
                         ) {
@@ -631,18 +635,21 @@ private fun MobileBottomBar(
                 )
                 MobileRemoteKeyButton(
                     label = stringResource(R.string.remoteKeyRalt),
+                    testTag = "home_key_ralt",
                     enabled = state.streamState == StreamState.Streaming,
                     onDown = { viewModel.remoteKeyDown(REMOTE_KEY_RALT) },
                     onUp = { viewModel.remoteKeyUp(REMOTE_KEY_RALT) }
                 )
                 MobileRemoteKeyButton(
                     label = stringResource(R.string.remoteKeyAltSpace),
+                    testTag = "home_key_altspace",
                     enabled = state.streamState == StreamState.Streaming,
                     onDown = { viewModel.remoteKeyDown(REMOTE_KEY_ALT_SPACE) },
                     onUp = { viewModel.remoteKeyUp(REMOTE_KEY_ALT_SPACE) }
                 )
                 MobileRemoteKeyButton(
                     label = stringResource(R.string.remoteKeyEnter),
+                    testTag = "home_key_enter",
                     enabled = state.streamState == StreamState.Streaming,
                     onDown = { viewModel.remoteKeyDown(REMOTE_KEY_ENTER) },
                     onUp = { viewModel.remoteKeyUp(REMOTE_KEY_ENTER) }
@@ -668,6 +675,7 @@ private fun MobileBottomBar(
 @Composable
 private fun MobileRemoteKeyButton(
     label: String,
+    testTag: String,
     enabled: Boolean,
     onDown: () -> Unit,
     onUp: () -> Unit
@@ -686,7 +694,7 @@ private fun MobileRemoteKeyButton(
     Surface(
         shape = MaterialTheme.shapes.small,
         color = bgColor,
-        modifier = Modifier.pointerInput(enabled) {
+        modifier = Modifier.testTag(testTag).pointerInput(enabled) {
             if (!enabled) return@pointerInput
             detectTapGestures(
                 onPress = {
@@ -739,7 +747,7 @@ private fun MobileMuteButton(
     Surface(
         shape = MaterialTheme.shapes.small,
         color = bgColor,
-        modifier = Modifier.scale(scale).clickable(interactionSource, null) { onToggle() }
+        modifier = Modifier.scale(scale).testTag("home_mute").clickable(interactionSource, null) { onToggle() }
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
@@ -781,7 +789,7 @@ private fun MobileStatusText(state: AppUiState) {
         text,
         style = MaterialTheme.typography.labelLarge,
         color = color,
-        modifier = Modifier.padding(vertical = 12.dp),
+        modifier = Modifier.padding(vertical = 12.dp).testTag("home_status_text"),
         textAlign = TextAlign.Center
     )
 }
@@ -882,7 +890,7 @@ private fun MobileMainButton(
             },
             interactionSource = interactionSource,
             containerColor = buttonColor,
-            modifier = Modifier.size(buttonSize),
+            modifier = Modifier.size(buttonSize).testTag("home_main_button"),
             shape = CircleShape,
             elevation = FloatingActionButtonDefaults.elevation(
                 defaultElevation = if (isPressed) 2.dp else 8.dp,

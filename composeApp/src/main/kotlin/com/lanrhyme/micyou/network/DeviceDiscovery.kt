@@ -67,6 +67,7 @@ class DeviceDiscoveryManager constructor() {
             }
 
             override fun onServiceFound(serviceInfo: NsdServiceInfo) {
+                if (!discoveryActive) return
                 val name = serviceInfo.serviceName
                 if (name !in pendingResolution) {
                     pendingResolution.add(name)
@@ -78,6 +79,7 @@ class DeviceDiscoveryManager constructor() {
                             }
 
                             override fun onServiceResolved(info: NsdServiceInfo) {
+                                if (!discoveryActive) return
                                 pendingResolution.remove(info.serviceName)
                                 val host = info.host?.hostAddress ?: return
                                 val port = info.port
@@ -99,6 +101,7 @@ class DeviceDiscoveryManager constructor() {
             }
 
             override fun onServiceLost(serviceInfo: NsdServiceInfo) {
+                if (!discoveryActive) return
                 Logger.i("DeviceDiscovery", "Service lost: ${serviceInfo.serviceName}")
                 _discoveredDevices.update { current ->
                     current.filterNot { it.name == serviceInfo.serviceName }
