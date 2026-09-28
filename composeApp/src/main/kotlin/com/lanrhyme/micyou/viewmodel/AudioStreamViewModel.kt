@@ -35,6 +35,7 @@ import com.lanrhyme.micyou.audio.SampleRate
 import com.lanrhyme.micyou.audio.availableAudioFormats
 import com.lanrhyme.micyou.audio.defaultAudioFormat
 import com.lanrhyme.micyou.network.calculateUdpPort
+import com.lanrhyme.micyou.service.RemoteKeyBus
 import com.lanrhyme.micyou.network.ConnectionErrorDetails
 import com.lanrhyme.micyou.network.ConnectionErrorHelper
 import com.lanrhyme.micyou.network.DeviceDiscoveryManager
@@ -196,10 +197,16 @@ class AudioStreamViewModel : ViewModel() {
                 // 断开回 Idle/Error 且为 Wifi 模式时恢复扫描。
                 if (state == StreamState.Streaming) {
                     discoveryManager.stopDiscovery()
-                } else if ((state == StreamState.Idle || state == StreamState.Error) &&
+                    RemoteKeyBus.sender = { keyId, pressed ->
+                        auxiliaryScope.launch { _audioEngine.sendRemoteKey(keyId, pressed) }
+                    }
+                } else {
+                    RemoteKeyBus.sender = null
+                    if ((state == StreamState.Idle || state == StreamState.Error) &&
                     _uiState.value.mode == ConnectionMode.Wifi
                 ) {
                     discoveryManager.startDiscovery()
+                }
                 }
             }
         }

@@ -351,6 +351,46 @@ private fun LazyListScope.generalSettingsItems(
 
         items.add { isFirst, isLast ->
             val context = LocalContext.current
+            Surface(
+                shape = MaterialTheme.shapes.medium,
+                color = containerColor,
+                modifier = Modifier.fillMaxWidth().clickable {
+                    try {
+                        context.startActivity(
+                            android.content.Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                        )
+                    } catch (_: Exception) {
+                    }
+                }
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            stringResource(R.string.a11yServiceLabel),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            stringResource(R.string.a11yServiceDesc),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Text(
+                        ">",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+
+        items.add { isFirst, isLast ->
+            val context = LocalContext.current
             val timeText = "%02d:%02d".format(state.autoDisconnectHour, state.autoDisconnectMinute)
             Surface(
                 shape = MaterialTheme.shapes.medium,

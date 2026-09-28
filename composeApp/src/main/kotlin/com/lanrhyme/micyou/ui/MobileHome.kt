@@ -225,17 +225,15 @@ fun MobileHome(viewModel: MainViewModel) {
                     )
                 }
 
-                // Main control
+                // Compact static status: text + button only, no card, no icon
                 AnimatedCardVisibility(
                     visible = contentVisible,
                     delayMillis = 250,
                     modifier = Modifier.weight(1f)
                 ) {
-                    MainControlCard(
+                    MobileCompactStatus(
                         state = state,
-                        viewModel = viewModel,
-                                                cardOpacity = state.backgroundSettings.cardOpacity,
-                        hazeState = hazeState
+                        viewModel = viewModel
                     )
                 }
 
@@ -571,130 +569,35 @@ private fun ConnectionConfigCard(
     }
 }
 
-// ==================== Main Control ====================
+// ==================== Compact Status ====================
 
 @Composable
-private fun MainControlCard(
+private fun MobileCompactStatus(
     state: AppUiState,
-    viewModel: MainViewModel,
-    cardOpacity: Float = 1f,
-    hazeState: HazeState? = null
+    viewModel: MainViewModel
 ) {
     val isRunning = state.streamState == StreamState.Streaming
     val isConnecting = state.streamState == StreamState.Connecting
-
-    HazeSurface(
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceBright.copy(alpha = cardOpacity),
-        hazeColor = MaterialTheme.colorScheme.surfaceBright.copy(alpha = cardOpacity * 0.7f),
-        modifier = Modifier.fillMaxWidth(),
-        hazeState = hazeState,
-        enabled = state.backgroundSettings.enableHazeEffect
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            // Status indicator at top
-            Column(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Status icon (static color, no animation)
-                val statusColor = when (state.streamState) {
-                    StreamState.Idle -> MaterialTheme.colorScheme.onSurfaceVariant
-                    StreamState.Connecting -> MaterialTheme.colorScheme.tertiary
-                    StreamState.Streaming -> MaterialTheme.colorScheme.primary
-                    StreamState.Error -> MaterialTheme.colorScheme.error
-                }
-
-                Surface(
-                    shape = MaterialTheme.shapes.medium,
-                    color = statusColor.copy(alpha = 0.12f),
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            when (state.streamState) {
-                                StreamState.Idle -> Icons.Rounded.Info
-                                StreamState.Connecting -> Icons.Rounded.HourglassTop
-                                StreamState.Streaming -> Icons.Rounded.CheckCircle
-                                StreamState.Error -> Icons.Rounded.Error
-                            },
-                            contentDescription = null,
-                            tint = statusColor,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-                
-                // Status text
-                val statusText = when (state.streamState) {
-                    StreamState.Idle -> stringResource(R.string.clickToStart)
-                    StreamState.Connecting -> stringResource(R.string.statusConnecting)
-                    StreamState.Streaming -> stringResource(R.string.statusStreaming)
-                    StreamState.Error -> state.errorMessage ?: stringResource(R.string.statusError)
-                }
-                
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Text(
-                        statusText,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = statusColor,
-                        fontWeight = FontWeight.Medium
-                    )
-                    if (isRunning) {
-                        Surface(
-                            shape = MaterialTheme.shapes.extraSmall,
-                            color = statusColor
-                        ) {
-                            Text(
-                                "LIVE",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
-                }
-                
-                // Error message
-                AnimatedVisibility(
-                    visible = state.streamState == StreamState.Error && state.errorMessage != null,
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically()
-                ) {
-                    if (state.errorMessage != null) {
-                        Surface(
-                            shape = MaterialTheme.shapes.small,
-                            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
-                            modifier = Modifier.padding(horizontal = 24.dp)
-                        ) {
-                            Text(
-                                state.errorMessage ?: "",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                modifier = Modifier.padding(8.dp),
-                                maxLines = 3,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Static text status (no animation)
-            MobileStatusText(state = state)
-            
-            // Main button
-            MobileMainButton(
-                isRunning = isRunning,
-                isConnecting = isConnecting,
-                viewModel = viewModel)
+        MobileStatusText(state = state)
+        MobileMainButton(
+            isRunning = isRunning,
+            isConnecting = isConnecting,
+            viewModel = viewModel
+        )
+        if (state.streamState == StreamState.Error && state.errorMessage != null) {
+            Text(
+                state.errorMessage ?: "",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(horizontal = 24.dp),
+                maxLines = 3,
+                textAlign = TextAlign.Center
+            )
         }
     }
 }
@@ -922,8 +825,8 @@ private fun MobileMainButton(
     isConnecting: Boolean,
     viewModel: MainViewModel
 ) {
-    // Static size/color by state (no animation); smaller footprint.
-    val buttonSize = if (isRunning) 84.dp else 72.dp
+    // Static size/color by state (no animation); compact footprint.
+    val buttonSize = if (isRunning) 72.dp else 64.dp
     val buttonColor = when {
         isRunning -> MaterialTheme.colorScheme.error
         isConnecting -> MaterialTheme.colorScheme.tertiary

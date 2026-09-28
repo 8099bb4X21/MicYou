@@ -41,6 +41,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lanrhyme.micyou.audio.AudioEngine
 import com.lanrhyme.micyou.network.REMOTE_KEY_ALT_SPACE
+import com.lanrhyme.micyou.service.RemoteKeyBus
 import com.lanrhyme.micyou.service.AudioService
 import com.lanrhyme.micyou.theme.isDarkThemeActive
 import com.lanrhyme.micyou.ui.dialog.getRequiredPermissions
@@ -100,7 +101,7 @@ class MainActivity : ComponentActivity() {
     /**
      * 音量上下键劫持为右Alt+空格（仅 Streaming 且设置开启时）。
      * 按下发 DOWN（忽略长按 repeat），松开发 UP；返回 true 吞掉系统音量调节。
-     * 仅前台有效，后台/灭屏需用系统音量。
+     * 仅前台有效；灭屏/后台由 MicYouKeyService（无障碍）经 RemoteKeyBus 接管。
      */
     private fun shouldHijackVolumeKeys(): Boolean {
         return try {
@@ -117,11 +118,7 @@ class MainActivity : ComponentActivity() {
             shouldHijackVolumeKeys()
         ) {
             if (event.repeatCount == 0) {
-                try {
-                    ViewModelProvider(this)[MainViewModel::class.java]
-                        .remoteKeyDown(REMOTE_KEY_ALT_SPACE)
-                } catch (_: Exception) {
-                }
+                RemoteKeyBus.sender?.invoke(REMOTE_KEY_ALT_SPACE, true)
             }
             return true
         }
@@ -131,13 +128,14 @@ class MainActivity : ComponentActivity() {
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
         // 松开只看开关不看串流：中途断流也要把 UP 补发（AudioEngine 非串流时自行忽略），防 PC 粘键。
         if (keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
-            try {
-                val vm = ViewModelProvider(this)[MainViewModel::class.java]
-                if (vm.uiState.value.volumeKeysSendRemoteKey) {
-                    vm.remoteKeyUp(REMOTE_KEY_ALT_SPACE)
-                    return true
-                }
+            val vm = try {
+                ViewModelProvider(this)[MainViewModel::class.java]
             } catch (_: Exception) {
+                null
+            }
+            if (vm?.uiState?.value?.volumeKeysSendRemoteKey == true) {
+                RemoteKeyBus.sender?.invoke(REMOTE_KEY_ALT_SPACE, false)
+                return true
             }
         }
         return super.onKeyUp(keyCode, event)

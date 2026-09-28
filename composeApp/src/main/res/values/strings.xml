@@ -197,6 +197,10 @@
     <string name="autoDisconnectLabel">Auto Disconnect Daily</string>
     <string name="autoDisconnectDesc">Automatically stop streaming every day at the set time</string>
     <string name="autoDisconnectTimeLabel">Disconnect Time</string>
+    <string name="a11yServiceLabel">Accessibility Keys (Screen-off)</string>
+    <string name="a11yServiceDesc">Keeps volume keys working with screen off or in background. Tap to enable in system settings.</string>
+    <string name="a11y_service_label">MicYou volume keys</string>
+    <string name="a11y_service_desc">Lets MicYou send Right Alt + Space to the PC with the volume buttons, even when the screen is off.</string>
     <string name="languageLabel">Language</string>
     
     <string name="licensesTitle">Open Source Libraries and Licenses</string>
