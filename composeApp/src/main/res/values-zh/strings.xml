@@ -153,6 +153,9 @@
     <string name="isLatestVersion">当前已是最新版本</string>
     <string name="keepScreenOnDesc">使用应用时防止屏幕自动熄灭</string>
     <string name="keepScreenOnLabel">保持屏幕常亮</string>
+    <string name="volumeKeysSendRemoteKeyLabel">音量键发送右Alt+空格</string>
+    <string name="volumeKeysSendRemoteKeyDesc">连接中按音量上下键即按住电脑右Alt+空格，不再调手机音量</string>
+    <string name="remoteKeyEnter">回车</string>
     <string name="languageLabel">语言</string>
     
     <string name="licensesTitle">开源库和许可证</string>

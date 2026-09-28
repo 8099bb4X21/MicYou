@@ -172,9 +172,10 @@ data class PluginMessage(
     }
 }
 
-/** 远程按键 keyId：1=右Alt，2=右Alt+空格 */
+/** 远程按键 keyId：1=右Alt，2=右Alt+空格，3=回车 */
 const val REMOTE_KEY_RALT = 1
 const val REMOTE_KEY_ALT_SPACE = 2
+const val REMOTE_KEY_ENTER = 3
 
 /** 远程按键 action：0=按下，1=松开 */
 const val REMOTE_KEY_DOWN = 0

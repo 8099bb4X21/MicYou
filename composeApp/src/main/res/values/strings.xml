@@ -187,6 +187,9 @@
     <string name="isLatestVersion">Already the latest version</string>
     <string name="keepScreenOnDesc">Prevent the screen from turning off while using the app</string>
     <string name="keepScreenOnLabel">Keep Screen On</string>
+    <string name="volumeKeysSendRemoteKeyLabel">Volume Keys Send RAlt+Space</string>
+    <string name="volumeKeysSendRemoteKeyDesc">While streaming, volume up/down buttons press and hold RAlt+Space on the PC instead of adjusting volume</string>
+    <string name="remoteKeyEnter">Enter</string>
     <string name="languageLabel">Language</string>
     
     <string name="licensesTitle">Open Source Libraries and Licenses</string>

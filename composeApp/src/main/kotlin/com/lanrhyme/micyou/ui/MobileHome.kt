@@ -136,6 +136,7 @@ import com.lanrhyme.micyou.viewmodel.MainViewModel
 import com.lanrhyme.micyou.viewmodel.StreamState
 import com.lanrhyme.micyou.viewmodel.VisualizerStyle
 import com.lanrhyme.micyou.network.REMOTE_KEY_ALT_SPACE
+import com.lanrhyme.micyou.network.REMOTE_KEY_ENTER
 import com.lanrhyme.micyou.network.REMOTE_KEY_RALT
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -718,7 +719,7 @@ private fun MainControlCard(
             // Audio visualizer
             if (isRunning) {
                 MobileAudioVisualizer(
-                    modifier = Modifier.size(240.dp),
+                    modifier = Modifier.size(140.dp),
                     audioLevel = audioLevel,
                     color = MaterialTheme.colorScheme.primary,
                     style = state.visualizerStyle
@@ -728,7 +729,7 @@ private fun MainControlCard(
             // Connecting animation
             if (isConnecting) {
                 ConnectingAnimation(
-                    modifier = Modifier.size(200.dp),
+                    modifier = Modifier.size(140.dp),
                     color = MaterialTheme.colorScheme.secondary
                 )
             }
@@ -780,6 +781,12 @@ private fun MobileBottomBar(
                     enabled = state.streamState == StreamState.Streaming,
                     onDown = { viewModel.remoteKeyDown(REMOTE_KEY_ALT_SPACE) },
                     onUp = { viewModel.remoteKeyUp(REMOTE_KEY_ALT_SPACE) }
+                )
+                MobileRemoteKeyButton(
+                    label = stringResource(R.string.remoteKeyEnter),
+                    enabled = state.streamState == StreamState.Streaming,
+                    onDown = { viewModel.remoteKeyDown(REMOTE_KEY_ENTER) },
+                    onUp = { viewModel.remoteKeyUp(REMOTE_KEY_ENTER) }
                 )
             }
             

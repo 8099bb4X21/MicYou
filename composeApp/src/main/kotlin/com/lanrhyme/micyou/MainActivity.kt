@@ -20,6 +20,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
+import android.view.KeyEvent
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -27,6 +28,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.ViewModelProvider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -38,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lanrhyme.micyou.audio.AudioEngine
+import com.lanrhyme.micyou.network.REMOTE_KEY_ALT_SPACE
 import com.lanrhyme.micyou.service.AudioService
 import com.lanrhyme.micyou.theme.isDarkThemeActive
 import com.lanrhyme.micyou.ui.dialog.getRequiredPermissions
@@ -92,6 +95,52 @@ class MainActivity : ComponentActivity() {
 
     fun shouldShowPermissionDialog(): Boolean {
         return !hasAllRequiredPermissions(getRequiredPermissions(this))
+    }
+
+    /**
+     * 音量上下键劫持为右Alt+空格（仅 Streaming 且设置开启时）。
+     * 按下发 DOWN（忽略长按 repeat），松开发 UP；返回 true 吞掉系统音量调节。
+     * 仅前台有效，后台/灭屏需用系统音量。
+     */
+    private fun shouldHijackVolumeKeys(): Boolean {
+        return try {
+            val vm = ViewModelProvider(this)[MainViewModel::class.java]
+            val s = vm.uiState.value
+            s.volumeKeysSendRemoteKey && s.streamState == StreamState.Streaming
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        if ((keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) &&
+            shouldHijackVolumeKeys()
+        ) {
+            if (event.repeatCount == 0) {
+                try {
+                    ViewModelProvider(this)[MainViewModel::class.java]
+                        .remoteKeyDown(REMOTE_KEY_ALT_SPACE)
+                } catch (_: Exception) {
+                }
+            }
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
+        // 松开只看开关不看串流：中途断流也要把 UP 补发（AudioEngine 非串流时自行忽略），防 PC 粘键。
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+            try {
+                val vm = ViewModelProvider(this)[MainViewModel::class.java]
+                if (vm.uiState.value.volumeKeysSendRemoteKey) {
+                    vm.remoteKeyUp(REMOTE_KEY_ALT_SPACE)
+                    return true
+                }
+            } catch (_: Exception) {
+            }
+        }
+        return super.onKeyUp(keyCode, event)
     }
 
     override fun attachBaseContext(newBase: Context) {

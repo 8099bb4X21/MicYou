@@ -45,6 +45,7 @@ data class SettingsUiState(
     val language: AppLanguage = AppLanguage.System,
     val autoStart: Boolean = false,
     val keepScreenOn: Boolean = false,
+    val volumeKeysSendRemoteKey: Boolean = true,
     val autoCheckUpdate: Boolean = true,
     val useMirrorDownload: Boolean = false,
     val mirrorCdk: String = "",
@@ -81,6 +82,7 @@ class SettingsViewModel : ViewModel() {
         }
     val savedAutoStart = settings.getBoolean("auto_start", false)
     val savedKeepScreenOn = settings.getBoolean("keep_screen_on", false)
+    val savedVolumeKeysSendRemoteKey = settings.getBoolean("volume_keys_send_remote_key", true)
     val savedVisualizerStyleName = settings.getString("visualizer_style", VisualizerStyle.VolumeRing.name)
     val savedVisualizerStyle = try {
             VisualizerStyle.valueOf(savedVisualizerStyleName)
@@ -112,6 +114,7 @@ class SettingsViewModel : ViewModel() {
                 language = initialLanguage,
                 autoStart = savedAutoStart,
                 keepScreenOn = savedKeepScreenOn,
+                volumeKeysSendRemoteKey = savedVolumeKeysSendRemoteKey,
                 visualizerStyle = savedVisualizerStyle,
                 backgroundSettings = BackgroundSettings(
                     imagePath = savedBackgroundImagePath,
@@ -172,6 +175,11 @@ class SettingsViewModel : ViewModel() {
     fun setKeepScreenOn(enabled: Boolean) {
         _uiState.update { it.copy(keepScreenOn = enabled) }
         settings.putBoolean("keep_screen_on", enabled)
+    }
+
+    fun setVolumeKeysSendRemoteKey(enabled: Boolean) {
+        _uiState.update { it.copy(volumeKeysSendRemoteKey = enabled) }
+        settings.putBoolean("volume_keys_send_remote_key", enabled)
     }
 
     fun setVisualizerStyle(style: VisualizerStyle) {

@@ -22,18 +22,21 @@ use std::time::Duration;
 
 /// 远程按键 keyId（与安卓 Protocol.kt REMOTE_KEY_* 对齐）。
 pub const KEY_RALT: u8 = 1;
-/// 远程按键 keyId：Alt+Space。
+/// 远程按键 keyId：右Alt+空格。
 pub const KEY_ALT_SPACE: u8 = 2;
+/// 远程按键 keyId：回车。
+pub const KEY_ENTER: u8 = 3;
 
 /// payload action：0=按下，1=松开。
 pub const ACTION_DOWN: u8 = 0;
 pub const ACTION_UP: u8 = 1;
 
-/// keyId 转 VK 列表：右 Alt=[0xA5]，右Alt+空格=[0xA5, 0x20]。
+/// keyId 转 VK 列表：右 Alt=[0xA5]，右Alt+空格=[0xA5, 0x20]，回车=[0x0D]。
 pub fn vks_for_key(key_id: u8) -> Option<Vec<u16>> {
     match key_id {
         KEY_RALT => Some(vec![0xA5]),
         KEY_ALT_SPACE => Some(vec![0xA5, 0x20]),
+        KEY_ENTER => Some(vec![0x0D]),
         _ => None,
     }
 }

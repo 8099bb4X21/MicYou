@@ -158,6 +158,15 @@ class AudioStreamViewModel : ViewModel() {
         auxiliaryScope.launch {
             _audioEngine.streamState.collect { state ->
                 _uiState.update { it.copy(streamState = state) }
+                // 连上后停 mDNS 扫描：免设备列表反复重组界面，也省电；
+                // 断开回 Idle/Error 且为 Wifi 模式时恢复扫描。
+                if (state == StreamState.Streaming) {
+                    discoveryManager.stopDiscovery()
+                } else if ((state == StreamState.Idle || state == StreamState.Error) &&
+                    _uiState.value.mode == ConnectionMode.Wifi
+                ) {
+                    discoveryManager.startDiscovery()
+                }
             }
         }
 

@@ -105,6 +105,7 @@ data class AppUiState(
     val language: AppLanguage = AppLanguage.System,
     val autoStart: Boolean = false,
     val keepScreenOn: Boolean = false,
+    val volumeKeysSendRemoteKey: Boolean = true,
     val autoCheckUpdate: Boolean = true,
     val useMirrorDownload: Boolean = false,
     val mirrorCdk: String = "",
@@ -226,6 +227,7 @@ class MainViewModel : ViewModel() {
                         language = settingsState.language,
                         autoStart = settingsState.autoStart,
                         keepScreenOn = settingsState.keepScreenOn,
+                        volumeKeysSendRemoteKey = settingsState.volumeKeysSendRemoteKey,
                         autoCheckUpdate = settingsState.autoCheckUpdate,
                         useMirrorDownload = settingsState.useMirrorDownload,
                         mirrorCdk = settingsState.mirrorCdk,
@@ -287,6 +289,7 @@ class MainViewModel : ViewModel() {
     fun setLanguage(language: AppLanguage) = settingsViewModel.setLanguage(language)
     fun setAutoStart(enabled: Boolean) = settingsViewModel.setAutoStart(enabled)
     fun setKeepScreenOn(enabled: Boolean) = settingsViewModel.setKeepScreenOn(enabled)
+    fun setVolumeKeysSendRemoteKey(enabled: Boolean) = settingsViewModel.setVolumeKeysSendRemoteKey(enabled)
     fun setVisualizerStyle(style: VisualizerStyle) = settingsViewModel.setVisualizerStyle(style)
     fun setAutoCheckUpdate(enabled: Boolean) = settingsViewModel.setAutoCheckUpdate(enabled)
     fun setUseMirrorDownload(enabled: Boolean) = settingsViewModel.setUseMirrorDownload(enabled)

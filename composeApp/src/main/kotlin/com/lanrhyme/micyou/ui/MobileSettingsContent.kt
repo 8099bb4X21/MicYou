@@ -321,6 +321,20 @@ private fun LazyListScope.generalSettingsItems(
 
         items.add { isFirst, isLast ->
             ExpressiveSettingsSwitchItem(
+                headline = stringResource(R.string.volumeKeysSendRemoteKeyLabel),
+                supporting = stringResource(R.string.volumeKeysSendRemoteKeyDesc),
+                checked = state.volumeKeysSendRemoteKey,
+                onCheckedChange = { viewModel.setVolumeKeysSendRemoteKey(it) },
+                isFirst = isFirst,
+                isLast = isLast,
+                containerColor = containerColor,
+                hazeState = hazeState,
+                enableHaze = enableHaze
+            )
+        }
+
+        items.add { isFirst, isLast ->
+            ExpressiveSettingsSwitchItem(
                 headline = stringResource(R.string.autoCheckUpdateLabel),
                 supporting = stringResource(R.string.autoCheckUpdateDesc),
                 checked = state.autoCheckUpdate,
