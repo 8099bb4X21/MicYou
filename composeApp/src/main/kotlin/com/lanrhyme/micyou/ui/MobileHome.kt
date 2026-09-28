@@ -143,7 +143,7 @@ import com.lanrhyme.micyou.network.REMOTE_KEY_RALT
 @Composable
 fun MobileHome(viewModel: MainViewModel) {
     val state by viewModel.uiState.collectAsState()
-    val audioLevel by viewModel.audioLevels.collectAsState(initial = 0f)
+    // 静态界面：不再订阅每块音频的电平流，避免高频重组刷新与耗电。
     
     val snackbarHostState = remember { SnackbarHostState() }
     val isDarkTheme = isDarkThemeActive(state.themeMode)
@@ -234,7 +234,6 @@ fun MobileHome(viewModel: MainViewModel) {
                     MainControlCard(
                         state = state,
                         viewModel = viewModel,
-                        audioLevel = audioLevel,
                                                 cardOpacity = state.backgroundSettings.cardOpacity,
                         hazeState = hazeState
                     )
@@ -346,25 +345,12 @@ private fun MobileHeaderSection(
                 }
                 
                 Column {
-                    // Animated gradient title
-                    val color1 = MaterialTheme.colorScheme.primary
-                    val color2 = MaterialTheme.colorScheme.tertiary
-                    val infiniteTransition = rememberInfiniteTransition(label = "MobileTitleColor")
-    val animatedColor by infiniteTransition.animateColor(
-                        initialValue = color1,
-                        targetValue = color2,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(4000, easing = LinearEasing),
-                            repeatMode = RepeatMode.Reverse
-                        ),
-                        label = "Color"
-                    )
-                    
+                    // Static title (no animation)
                     Text(
                         stringResource(R.string.appName),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.ExtraBold,
-                        color = animatedColor
+                        color = MaterialTheme.colorScheme.primary
                     )
                     Text(
                         "${stringResource(R.string.ipLabel)}${"Client"}",
@@ -508,20 +494,9 @@ private fun ConnectionConfigCard(
                             onClick = { viewModel.restartDiscovery() },
                             modifier = Modifier.size(32.dp)
                         ) {
-                            val infiniteTransition = rememberInfiniteTransition()
-                            val rotation by infiniteTransition.animateFloat(
-                                initialValue = 0f,
-                                targetValue = 360f,
-                                animationSpec = infiniteRepeatable(
-                                    animation = tween(1000, easing = LinearEasing),
-                                    repeatMode = RepeatMode.Restart
-                                )
-                            )
                             Icon(
                                 Icons.Filled.Refresh, null,
-                                modifier = Modifier
-                                    .size(18.dp)
-                                    .graphicsLayer { rotationZ = if (state.isDiscovering) rotation else 0f },
+                                modifier = Modifier.size(18.dp),
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
@@ -602,7 +577,6 @@ private fun ConnectionConfigCard(
 private fun MainControlCard(
     state: AppUiState,
     viewModel: MainViewModel,
-    audioLevel: Float,
     cardOpacity: Float = 1f,
     hazeState: HazeState? = null
 ) {
@@ -626,21 +600,18 @@ private fun MainControlCard(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Status icon
-                val statusColor by animateColorAsState(
-                    targetValue = when (state.streamState) {
-                        StreamState.Idle -> MaterialTheme.colorScheme.onSurfaceVariant
-                        StreamState.Connecting -> MaterialTheme.colorScheme.tertiary
-                        StreamState.Streaming -> MaterialTheme.colorScheme.primary
-                        StreamState.Error -> MaterialTheme.colorScheme.error
-                    },
-                    animationSpec = tween(300)
-                )
+                // Status icon (static color, no animation)
+                val statusColor = when (state.streamState) {
+                    StreamState.Idle -> MaterialTheme.colorScheme.onSurfaceVariant
+                    StreamState.Connecting -> MaterialTheme.colorScheme.tertiary
+                    StreamState.Streaming -> MaterialTheme.colorScheme.primary
+                    StreamState.Error -> MaterialTheme.colorScheme.error
+                }
 
                 Surface(
                     shape = MaterialTheme.shapes.medium,
                     color = statusColor.copy(alpha = 0.12f),
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(32.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
@@ -775,22 +746,17 @@ private fun MobileBottomBar(
                 )
             }
             
-            val dotColor by animateColorAsState(
-                targetValue = when (state.streamState) {
-                    StreamState.Idle -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-                    StreamState.Connecting -> MaterialTheme.colorScheme.tertiary
-                    StreamState.Streaming -> MaterialTheme.colorScheme.primary
-                    StreamState.Error -> MaterialTheme.colorScheme.error
-                },
-                animationSpec = tween(300)
-            )
-            val dotPulse = if (state.streamState == StreamState.Streaming)
-                rememberPulseAnimation(0.8f, 1.2f, 1200) else 1f
-            
+            val dotColor = when (state.streamState) {
+                StreamState.Idle -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                StreamState.Connecting -> MaterialTheme.colorScheme.tertiary
+                StreamState.Streaming -> MaterialTheme.colorScheme.primary
+                StreamState.Error -> MaterialTheme.colorScheme.error
+            }
+
             Surface(
                 shape = CircleShape,
                 color = dotColor,
-                modifier = Modifier.size(8.dp).scale(dotPulse)
+                modifier = Modifier.size(8.dp)
             ) {}
         }
     }
@@ -956,41 +922,14 @@ private fun MobileMainButton(
     isConnecting: Boolean,
     viewModel: MainViewModel
 ) {
-    val buttonSize by animateDpAsState(
-        targetValue = if (isRunning) 100.dp else 80.dp,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        )
-    )
-    val buttonColor by animateColorAsState(
-        targetValue = when {
-            isRunning -> MaterialTheme.colorScheme.error
-            isConnecting -> MaterialTheme.colorScheme.tertiary
-            else -> MaterialTheme.colorScheme.primary
-        },
-        animationSpec = tween(400, easing = EasingFunctions.EaseInOutCubic)
-    )
-    val infiniteTransition = rememberInfiniteTransition(label = "MobileButton")
-    val angle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing)
-        ),
-        label = "MobileSpinner"
-    )
-    val glowAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.25f,
-        targetValue = 0.55f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = EasingFunctions.EaseInOutCubic),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "BtnGlow"
-    )
-    val pulseScale = if (isRunning) rememberPulseAnimation(0.96f, 1.04f, 900) else 1f
-    
+    // Static size/color by state (no animation); smaller footprint.
+    val buttonSize = if (isRunning) 84.dp else 72.dp
+    val buttonColor = when {
+        isRunning -> MaterialTheme.colorScheme.error
+        isConnecting -> MaterialTheme.colorScheme.tertiary
+        else -> MaterialTheme.colorScheme.primary
+    }
+
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val pressScale by animateFloatAsState(
@@ -1000,27 +939,20 @@ private fun MobileMainButton(
             stiffness = Spring.StiffnessMedium
         )
     )
-    
+
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .size(buttonSize + 24.dp)
+            .size(buttonSize + 16.dp)
             .graphicsLayer {
-                scaleX = pressScale * pulseScale
-                scaleY = pressScale * pulseScale
+                scaleX = pressScale
+                scaleY = pressScale
             }
     ) {
-        // Glow ring behind button
-        if (isRunning) {
-            Canvas(modifier = Modifier.size(buttonSize + 20.dp)) {
-                drawCircle(buttonColor.copy(alpha = glowAlpha * 0.35f), size.width / 2)
-            }
-        }
-        
         if (isRunning || isConnecting) {
             Box(
                 modifier = Modifier
-                    .size(buttonSize + 24.dp)
+                    .size(buttonSize + 16.dp)
                     .drawBehind {
                         drawCircle(
                             brush = Brush.radialGradient(
@@ -1058,9 +990,7 @@ private fun MobileMainButton(
                 Icon(
                     Icons.Filled.Refresh,
                     stringResource(R.string.statusConnecting),
-                    modifier = Modifier
-                        .size(36.dp)
-                        .graphicsLayer { rotationZ = angle }
+                    modifier = Modifier.size(36.dp)
                 )
             } else {
                 Icon(
