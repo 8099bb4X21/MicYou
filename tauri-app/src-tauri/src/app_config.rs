@@ -119,6 +119,18 @@ impl Default for UiPrefs {
     }
 }
 
+fn default_true() -> bool {
+    true
+}
+
+fn default_click_action() -> String {
+    "send".to_string()
+}
+
+fn default_dblclick_action() -> String {
+    "toggle".to_string()
+}
+
 pub fn load_ui_prefs() -> UiPrefs {
     fs::read_to_string(ui_prefs_path())
         .ok()

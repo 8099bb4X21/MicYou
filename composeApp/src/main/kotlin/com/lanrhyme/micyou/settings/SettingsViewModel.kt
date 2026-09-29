@@ -98,8 +98,8 @@ class SettingsViewModel : ViewModel() {
     val savedAutoDisconnectHour = settings.getInt("auto_disconnect_hour", 19)
     val savedAutoDisconnectMinute = settings.getInt("auto_disconnect_minute", 30)
     val savedAllowRemoteWake = settings.getBoolean("allow_remote_wake", true)
-    val savedVolumeChordUp = parseChordString(settings.getString("volume_chord_up", null)).ifEmpty { DEFAULT_CHORD_UP }
-    val savedVolumeChordDown = parseChordString(settings.getString("volume_chord_down", null)).ifEmpty { DEFAULT_CHORD_DOWN }
+    val savedVolumeChordUp = parseChordString(settings.getString("volume_chord_up", "")).ifEmpty { DEFAULT_CHORD_UP }
+    val savedVolumeChordDown = parseChordString(settings.getString("volume_chord_down", "")).ifEmpty { DEFAULT_CHORD_DOWN }
     val savedVisualizerStyleName = settings.getString("visualizer_style", VisualizerStyle.VolumeRing.name)
     val savedVisualizerStyle = try {
             VisualizerStyle.valueOf(savedVisualizerStyleName)

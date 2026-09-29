@@ -297,7 +297,13 @@ private fun chordVkName(vk: Int): String {
 @Composable
 private fun chordSummary(vks: List<Int>): String {
     if (vks.isEmpty()) return stringResource(R.string.chordEmpty)
-    return vks.joinToString("+") { chordVkName(it) }
+    // 注意：joinToString/map等高阶lambda内不能调@Composable，只能用for循环。
+    val sb = StringBuilder()
+    for ((i, vk) in vks.withIndex()) {
+        if (i > 0) sb.append('+')
+        sb.append(chordVkName(vk))
+    }
+    return sb.toString()
 }
 
 /** 音量和弦配置行：显示当前组合，点击弹多选框。 */
