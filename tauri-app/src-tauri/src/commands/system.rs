@@ -17,7 +17,7 @@ use serde::Serialize;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 use std::process::Command;
 use tauri::window::Effect;
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Manager, Runtime, State};
 use tokio_util::sync::CancellationToken;
 
 use crate::audio_stream::{validate_audio_packet, AudioStreamEvent, ExpectedAudioSession};
@@ -1446,15 +1446,17 @@ pub fn hide_main_window(app: AppHandle) -> Result<(), String> {
 
 pub const FLOATING_WINDOW_LABEL: &str = "floating-window";
 
-#[tauri::command]
-pub fn show_floating_window(app: AppHandle) -> Result<(), String> {
-    use tauri::Manager;
-    if let Some(win) = app.get_webview_window(FLOATING_WINDOW_LABEL) {
-        win.show().map_err(|e| e.to_string())?;
+/// 泛型版：供托盘菜单等泛型上下文调用（具体命令转调它，避免运行时类型统一）。
+pub fn ensure_floating_window<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
+    if app.get_webview_window(FLOATING_WINDOW_LABEL).is_some() {
         return Ok(());
     }
+    show_floating_window_built(app)
+}
+
+fn show_floating_window_built<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
     let _win = tauri::WebviewWindowBuilder::new(
-        &app,
+        app,
         FLOATING_WINDOW_LABEL,
         tauri::WebviewUrl::App("#/floating-window".into()),
     )
@@ -1472,6 +1474,33 @@ pub fn show_floating_window(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// 泛型版显隐切换。
+pub fn toggle_floating_window_for<R: Runtime>(app: &AppHandle<R>) -> Result<bool, String> {
+    if let Some(win) = app.get_webview_window(FLOATING_WINDOW_LABEL) {
+        let visible = win.is_visible().unwrap_or(false);
+        if visible {
+            win.hide().map_err(|e| e.to_string())?;
+            Ok(false)
+        } else {
+            win.show().map_err(|e| e.to_string())?;
+            Ok(true)
+        }
+    } else {
+        ensure_floating_window(app)?;
+        Ok(true)
+    }
+}
+
+#[tauri::command]
+pub fn show_floating_window(app: AppHandle) -> Result<(), String> {
+    use tauri::Manager;
+    if let Some(win) = app.get_webview_window(FLOATING_WINDOW_LABEL) {
+        win.show().map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+    show_floating_window_built(&app)
+}
+
 #[tauri::command]
 pub fn hide_floating_window(app: AppHandle) -> Result<(), String> {
     if let Some(win) = app.get_webview_window(FLOATING_WINDOW_LABEL) {
@@ -1482,20 +1511,7 @@ pub fn hide_floating_window(app: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 pub fn toggle_floating_window(app: AppHandle) -> Result<bool, String> {
-    use tauri::Manager;
-    if let Some(win) = app.get_webview_window(FLOATING_WINDOW_LABEL) {
-        let visible = win.is_visible().unwrap_or(false);
-        if visible {
-            win.hide().map_err(|e| e.to_string())?;
-            Ok(false)
-        } else {
-            show_floating_window(app)?;
-            Ok(true)
-        }
-    } else {
-        show_floating_window(app)?;
-        Ok(true)
-    }
+    toggle_floating_window_for(&app)
 }
 
 #[tauri::command]

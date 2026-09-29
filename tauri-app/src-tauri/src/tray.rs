@@ -138,7 +138,7 @@ pub fn build_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
                     let _ = app.emit("tray-action", id);
                 }
                 MENU_ID_FLOATING => {
-                    if let Err(e) = crate::commands::toggle_floating_window(app.clone()) {
+                    if let Err(e) = crate::commands::toggle_floating_window_for(app) {
                         log::warn!(target: "tray", "toggle floating window failed: {e}");
                     }
                 }
