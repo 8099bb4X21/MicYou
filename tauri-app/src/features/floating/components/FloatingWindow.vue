@@ -227,8 +227,11 @@ async function closeMenu() {
   if (!menuOpen.value) return;
   menuOpen.value = false;
   try {
-    await appWindow.setSize(new LogicalSize(64, 64));
-  } catch {}
+    await appWindow.setSize(new LogicalSize(80, 80));
+    ftrace('menu restore ok');
+  } catch (e) {
+    ftrace(`menu restore failed: ${String(e)}`);
+  }
 }
 
 async function menuShow() {
@@ -345,8 +348,8 @@ html, body, #app {
 }
 
 .floating-svg {
-  width: 40px;
-  height: 40px;
+  width: 52px;
+  height: 52px;
   display: block;
   user-select: none;
   pointer-events: none;

@@ -1461,7 +1461,7 @@ fn show_floating_window_built<R: Runtime>(app: &AppHandle<R>) -> Result<(), Stri
         tauri::WebviewUrl::App("#/floating-window".into()),
     )
     .title("MicYou")
-    .inner_size(64.0, 64.0)
+    .inner_size(80.0, 80.0)
     .resizable(false)
     .decorations(false)
     .transparent(true)
