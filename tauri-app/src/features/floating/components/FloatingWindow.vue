@@ -224,7 +224,9 @@ async function handleContextMenu(e: MouseEvent) {
   // Enlarge the window so the menu fits; restore on close.
   try {
     await appWindow.setSize(new LogicalSize(220, 300));
-    ftrace('menu resize ok');
+    const outer = await appWindow.outerSize();
+    const inner = await appWindow.innerSize();
+    ftrace(`menu resize ok outer=${outer.width}x${outer.height} inner=${inner.width}x${inner.height}`);
   } catch (e) {
     ftrace(`menu resize failed: ${String(e)}`);
   }
