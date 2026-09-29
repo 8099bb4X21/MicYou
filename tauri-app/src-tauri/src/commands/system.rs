@@ -1625,27 +1625,63 @@ pub async fn toggle_streaming(
     if running {
         stop_server_inner(&state, events).await
     } else {
-        let prefs = crate::app_config::load_server_prefs();
-        let resource_dir = app_handle.path().resource_dir().ok();
-        let bind_address = if prefs.mode == "usb" || prefs.auto_bind {
-            None
-        } else {
-            Some(prefs.bind_address.clone())
-        };
-        let output_device = match prefs.output_device.as_str() {
-            "auto" | "default" | "" => None,
-            name => Some(name.to_string()),
-        };
-        start_server_inner(
-            &state,
-            prefs.port,
-            prefs.mode.clone(),
-            bind_address,
-            output_device,
-            resource_dir,
-            events,
+        let r = start_with_saved_prefs(&state, &app_handle).await;
+        // 显式启动顺带唤醒手机（尽力而为，不影响启动结果）。
+        if r.is_ok() {
+            crate::wake::send_wake_to_last();
+        }
+        r
+    }
+}
+
+/// 按 server.json 存档配置起服务（唤醒监听与悬浮开关共用）。
+pub async fn start_with_saved_prefs(
+    state: &ServerState,
+    app_handle: &AppHandle,
+) -> Result<String, String> {
+    let events: crate::events::SharedEvents =
+        std::sync::Arc::new(crate::events::TauriEventSink(app_handle.clone()));
+    let running = {
+        let lifecycle = state.lifecycle.lock().await;
+        matches!(
+            lifecycle.phase(),
+            crate::server::ServerLifecyclePhase::Running
         )
-        .await
+    };
+    if running {
+        return Ok("already running".into());
+    }
+    let prefs = crate::app_config::load_server_prefs();
+    let resource_dir = app_handle.path().resource_dir().ok();
+    let bind_address = if prefs.mode == "usb" || prefs.auto_bind {
+        None
+    } else {
+        Some(prefs.bind_address.clone())
+    };
+    let output_device = match prefs.output_device.as_str() {
+        "auto" | "default" | "" => None,
+        name => Some(name.to_string()),
+    };
+    start_server_inner(
+        state,
+        prefs.port,
+        prefs.mode.clone(),
+        bind_address,
+        output_device,
+        resource_dir,
+        events,
+    )
+    .await
+}
+
+/// 向手机发唤醒包（GUI 显式启动成功后调用；悬浮走后端已内置）。
+#[tauri::command]
+pub fn send_wake() -> Result<String, String> {
+    let n = crate::wake::send_wake_to_last();
+    if n == 0 {
+        Err("wake send failed".into())
+    } else {
+        Ok(format!("wake sent to {n} target(s)"))
     }
 }
 

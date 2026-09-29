@@ -344,12 +344,14 @@ export function useServer(options?: { audioLevel?: Ref<number>; isMuted?: Ref<bo
           bindAddress: bindAddress,
           outputDevice: (outputDevice.value && outputDevice.value !== 'auto' && outputDevice.value !== 'default') ? outputDevice.value : null
         });
-        const status = await invoke<{ isServerRunning: boolean; isConnected: boolean }>('get_streaming_status').catch(() => null);
-        if (status?.isConnected) {
-          ensureStreamingState();
-        } else if (serverState.value === 'starting') {
-          serverState.value = 'connecting';
-        }
+      const status = await invoke<{ isServerRunning: boolean; isConnected: boolean }>('get_streaming_status').catch(() => null);
+      if (status?.isConnected) {
+        ensureStreamingState();
+      } else if (serverState.value === 'starting') {
+        serverState.value = 'connecting';
+      }
+      // 显式启动成功顺带唤醒手机（尽力而为）。
+      try { await invoke('send_wake'); } catch (e) { console.warn('send_wake failed:', e); }
         if (activeConnectionMode.value === 'usb') {
           const result = await invoke<{ type: string; devices?: AdbDevice[] }>('enable_usb_mode', { port: activePort.value, deviceSerial: null });
           if (result.type === 'MultipleDevices') {

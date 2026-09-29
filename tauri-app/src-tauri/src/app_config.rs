@@ -163,6 +163,9 @@ pub struct ServerPrefs {
     /// including for server.json files written before this field existed.
     #[serde(default = "default_mute_sync")]
     pub mute_sync: bool,
+    /// 手机上次成功连接的 IP（PC 主动唤醒用；免密钥，局域网信任）。
+    #[serde(default)]
+    pub last_client_ip: String,
 }
 
 fn default_mute_sync() -> bool {
@@ -179,6 +182,7 @@ impl Default for ServerPrefs {
             auto_bind: true,
             output_device: String::new(),
             mute_sync: true,
+            last_client_ip: String::new(),
         }
     }
 }

@@ -197,6 +197,8 @@
     <string name="autoDisconnectLabel">Auto Disconnect Daily</string>
     <string name="autoDisconnectDesc">Automatically stop streaming every day at the set time</string>
     <string name="autoDisconnectTimeLabel">Disconnect Time</string>
+    <string name="allowRemoteWakeLabel">Auto Start on PC Wake</string>
+    <string name="allowRemoteWakeDesc">When the PC sends a wake packet on LAN, start streaming automatically</string>
     <string name="languageLabel">Language</string>
     
     <string name="licensesTitle">Open Source Libraries and Licenses</string>

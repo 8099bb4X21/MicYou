@@ -109,6 +109,7 @@ data class AppUiState(
     val autoDisconnectEnabled: Boolean = false,
     val autoDisconnectHour: Int = 19,
     val autoDisconnectMinute: Int = 30,
+    val allowRemoteWake: Boolean = true,
     val autoCheckUpdate: Boolean = true,
     val useMirrorDownload: Boolean = false,
     val mirrorCdk: String = "",
@@ -234,6 +235,7 @@ class MainViewModel : ViewModel() {
                         autoDisconnectEnabled = settingsState.autoDisconnectEnabled,
                         autoDisconnectHour = settingsState.autoDisconnectHour,
                         autoDisconnectMinute = settingsState.autoDisconnectMinute,
+                        allowRemoteWake = settingsState.allowRemoteWake,
                         autoCheckUpdate = settingsState.autoCheckUpdate,
                         useMirrorDownload = settingsState.useMirrorDownload,
                         mirrorCdk = settingsState.mirrorCdk,
@@ -298,6 +300,7 @@ class MainViewModel : ViewModel() {
     fun setVolumeKeysSendRemoteKey(enabled: Boolean) = settingsViewModel.setVolumeKeysSendRemoteKey(enabled)
     fun setAutoDisconnectEnabled(enabled: Boolean) = settingsViewModel.setAutoDisconnectEnabled(enabled)
     fun setAutoDisconnectTime(hour: Int, minute: Int) = settingsViewModel.setAutoDisconnectTime(hour, minute)
+    fun setAllowRemoteWake(enabled: Boolean) = settingsViewModel.setAllowRemoteWake(enabled)
     fun setVisualizerStyle(style: VisualizerStyle) = settingsViewModel.setVisualizerStyle(style)
     fun setAutoCheckUpdate(enabled: Boolean) = settingsViewModel.setAutoCheckUpdate(enabled)
     fun setUseMirrorDownload(enabled: Boolean) = settingsViewModel.setUseMirrorDownload(enabled)

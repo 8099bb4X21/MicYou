@@ -49,6 +49,7 @@ data class SettingsUiState(
     val autoDisconnectEnabled: Boolean = false,
     val autoDisconnectHour: Int = 19,
     val autoDisconnectMinute: Int = 30,
+    val allowRemoteWake: Boolean = true,
     val autoCheckUpdate: Boolean = true,
     val useMirrorDownload: Boolean = false,
     val mirrorCdk: String = "",
@@ -89,6 +90,7 @@ class SettingsViewModel : ViewModel() {
     val savedAutoDisconnectEnabled = settings.getBoolean("auto_disconnect_enabled", false)
     val savedAutoDisconnectHour = settings.getInt("auto_disconnect_hour", 19)
     val savedAutoDisconnectMinute = settings.getInt("auto_disconnect_minute", 30)
+    val savedAllowRemoteWake = settings.getBoolean("allow_remote_wake", true)
     val savedVisualizerStyleName = settings.getString("visualizer_style", VisualizerStyle.VolumeRing.name)
     val savedVisualizerStyle = try {
             VisualizerStyle.valueOf(savedVisualizerStyleName)
@@ -124,6 +126,7 @@ class SettingsViewModel : ViewModel() {
                 autoDisconnectEnabled = savedAutoDisconnectEnabled,
                 autoDisconnectHour = savedAutoDisconnectHour,
                 autoDisconnectMinute = savedAutoDisconnectMinute,
+                allowRemoteWake = savedAllowRemoteWake,
                 visualizerStyle = savedVisualizerStyle,
                 backgroundSettings = BackgroundSettings(
                     imagePath = savedBackgroundImagePath,
@@ -202,6 +205,11 @@ class SettingsViewModel : ViewModel() {
         _uiState.update { it.copy(autoDisconnectHour = h, autoDisconnectMinute = m) }
         settings.putInt("auto_disconnect_hour", h)
         settings.putInt("auto_disconnect_minute", m)
+    }
+
+    fun setAllowRemoteWake(enabled: Boolean) {
+        _uiState.update { it.copy(allowRemoteWake = enabled) }
+        settings.putBoolean("allow_remote_wake", enabled)
     }
 
     fun setVisualizerStyle(style: VisualizerStyle) {

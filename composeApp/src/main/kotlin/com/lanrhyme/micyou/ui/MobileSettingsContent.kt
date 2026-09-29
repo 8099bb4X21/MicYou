@@ -337,6 +337,20 @@ private fun LazyListScope.generalSettingsItems(
 
         items.add { isFirst, isLast ->
             ExpressiveSettingsSwitchItem(
+                headline = stringResource(R.string.allowRemoteWakeLabel),
+                supporting = stringResource(R.string.allowRemoteWakeDesc),
+                checked = state.allowRemoteWake,
+                onCheckedChange = { viewModel.setAllowRemoteWake(it) },
+                isFirst = isFirst,
+                isLast = isLast,
+                containerColor = containerColor,
+                hazeState = hazeState,
+                enableHaze = enableHaze
+            )
+        }
+
+        items.add { isFirst, isLast ->
+            ExpressiveSettingsSwitchItem(
                 headline = stringResource(R.string.autoDisconnectLabel),
                 supporting = stringResource(R.string.autoDisconnectDesc),
                 checked = state.autoDisconnectEnabled,

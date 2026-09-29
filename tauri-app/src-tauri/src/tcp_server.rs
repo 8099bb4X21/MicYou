@@ -452,6 +452,15 @@ async fn handle_client(
     drop(_takeover_guard);
 
     println!("Handshake successful with {}", addr);
+    // 记住手机 IP，供 PC 主动唤醒。
+    {
+        let mut prefs = crate::app_config::load_server_prefs();
+        let ip_str = addr.ip().to_string();
+        if prefs.last_client_ip != ip_str {
+            prefs.last_client_ip = ip_str;
+            let _ = crate::app_config::save_server_prefs(&prefs);
+        }
+    }
     let device_info = DeviceInfo {
         name: "MicYou Mobile".to_string(),
         ip: addr.ip().to_string(),

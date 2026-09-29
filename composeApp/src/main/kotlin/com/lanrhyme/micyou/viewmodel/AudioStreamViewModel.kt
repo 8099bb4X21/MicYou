@@ -35,6 +35,9 @@ import com.lanrhyme.micyou.audio.SampleRate
 import com.lanrhyme.micyou.audio.availableAudioFormats
 import com.lanrhyme.micyou.audio.defaultAudioFormat
 import com.lanrhyme.micyou.network.calculateUdpPort
+import com.lanrhyme.micyou.network.WAKE_UDP_PORT
+import com.lanrhyme.micyou.network.isWakePacket
+import com.lanrhyme.micyou.network.sendWakePacket
 import com.lanrhyme.micyou.network.ConnectionErrorDetails
 import com.lanrhyme.micyou.network.ConnectionErrorHelper
 import com.lanrhyme.micyou.network.DeviceDiscoveryManager
@@ -91,6 +94,8 @@ class AudioStreamViewModel : ViewModel() {
     private var closeJob: Job? = null
     private val _uiState = MutableStateFlow(AudioStreamUiState())
     val uiState: StateFlow<AudioStreamUiState> = _uiState.asStateFlow()
+    @Volatile
+    private var wakeSocket: java.net.DatagramSocket? = null
 
     // 音频电平相关
     val audioLevels = _audioEngine.audioLevels
@@ -111,6 +116,50 @@ class AudioStreamViewModel : ViewModel() {
             discoveryManager.startDiscovery()
         }
         startAutoDisconnectTicker()
+        startWakeListener()
+    }
+
+    /**
+     * 被唤醒监听：UDP 8553 收魔数包 → 未串流且允许时自动开始推流。
+     * 与桌面端 wake.rs 对齐；免密钥，局域网信任。
+     */
+    private fun startWakeListener() {
+        auxiliaryScope.launch(Dispatchers.IO) {
+            var sock: java.net.DatagramSocket? = null
+            try {
+                sock = java.net.DatagramSocket(null)
+                sock.reuseAddress = true
+                sock.bind(java.net.InetSocketAddress(WAKE_UDP_PORT))
+                sock.soTimeout = 2000
+                wakeSocket = sock
+                Logger.i("AudioStreamViewModel", "Wake listener on udp $WAKE_UDP_PORT")
+                val buf = ByteArray(64)
+                while (isActive) {
+                    try {
+                        val pkt = java.net.DatagramPacket(buf, buf.size)
+                        sock.receive(pkt)
+                        if (!isWakePacket(pkt.data, pkt.length)) continue
+                        Logger.i("AudioStreamViewModel", "wake packet from ${pkt.address?.hostAddress}")
+                        if (!settings.getBoolean("allow_remote_wake", true)) continue
+                        val st = _uiState.value.streamState
+                        if (st == StreamState.Streaming || st == StreamState.Connecting) continue
+                        startStream()
+                    } catch (e: java.net.SocketTimeoutException) {
+                        continue
+                    }
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Logger.w("AudioStreamViewModel", "Wake listener error: ${e.message}")
+            } finally {
+                try {
+                    sock?.close()
+                } catch (_: Exception) {
+                }
+                if (wakeSocket === sock) wakeSocket = null
+            }
+        }
     }
 
     /** 每天定时断开：每30s对一次表，到点且正在串流则断开，当天只触发一次。 */
@@ -272,6 +321,8 @@ class AudioStreamViewModel : ViewModel() {
         isStartStreamRequestPending = true
         auxiliaryScope.launch {
             try {
+                // 先广播唤醒包：PC 没起服务会被常驻监听拉起（尽力而为）。
+                withContext(Dispatchers.IO) { sendWakePacket(_uiState.value.ipAddress) }
                 startStreamInternal()
             } finally {
                 isStartStreamRequestPending = false
@@ -515,6 +566,11 @@ class AudioStreamViewModel : ViewModel() {
         closeJob?.let { return@synchronized it }
         closed.set(true)
         discoveryManager.stopDiscovery()
+        try {
+            wakeSocket?.close()
+        } catch (_: Exception) {
+        }
+        wakeSocket = null
         val engineCloseJob = _audioEngine.close()
         auxiliaryScope.cancel()
         closeJob = engineCloseJob

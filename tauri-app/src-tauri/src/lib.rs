@@ -30,6 +30,7 @@ pub mod opus;
 pub mod pipewire;
 pub mod plugins;
 pub mod remote_key;
+pub mod wake;
 pub mod sound_player;
 pub mod server;
 pub mod stats;
@@ -145,6 +146,8 @@ pub fn run() {
             if let Err(e) = crate::commands::ensure_floating_window(app.handle()) {
                 log::warn!(target: "tray", "failed to auto-show floating window: {e}");
             }
+            // 双向唤醒常驻监听（服务停了也留着）。
+            tauri::async_runtime::spawn(crate::wake::run_wake_listener(app.handle().clone()));
 
             {
                 let state = app.state::<server::ServerState>();
@@ -230,6 +233,7 @@ pub fn run() {
             commands::toggle_streaming,
             commands::import_winuhid_dll,
             commands::send_remote_key_once,
+            commands::send_wake,
             commands::log_floating,
             commands::exit_app,
             commands::set_mute_state,
