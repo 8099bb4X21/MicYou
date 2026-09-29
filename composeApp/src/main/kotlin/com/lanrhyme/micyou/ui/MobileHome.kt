@@ -614,8 +614,6 @@ private fun MobileCompactStatus(
         }
     }
 }
-    }
-}
 
 // ==================== Bottom Bar ====================
 
