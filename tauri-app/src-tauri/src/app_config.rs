@@ -106,8 +106,15 @@ pub struct UiPrefs {
     #[serde(default = "default_dblclick_action")]
     pub floating_dblclick: String,
     /// 悬浮窗发送按键：ralt | ralt_space | enter。
+    /// 历史共用键（保留做迁移兜底，新版改用 click/dblclick 独立键）。
     #[serde(default = "default_send_key")]
     pub floating_send: String,
+    /// 单击发送按键（逗号分隔十进制 VK，如 "165,32"）。
+    #[serde(default = "default_send_key")]
+    pub floating_send_click: String,
+    /// 双击发送按键（逗号分隔十进制 VK，如 "165,32"）。
+    #[serde(default = "default_send_key")]
+    pub floating_send_dblclick: String,
 }
 
 impl Default for UiPrefs {
@@ -119,6 +126,8 @@ impl Default for UiPrefs {
             floating_click: default_click_action(),
             floating_dblclick: default_dblclick_action(),
             floating_send: default_send_key(),
+            floating_send_click: default_send_key(),
+            floating_send_dblclick: default_send_key(),
         }
     }
 }

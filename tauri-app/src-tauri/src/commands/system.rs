@@ -1472,6 +1472,11 @@ fn show_floating_window_built<R: Runtime>(app: &AppHandle<R>) -> Result<(), Stri
     .build()
     .map_err(|e| e.to_string())?;
     apply_noactivate();
+    #[cfg(target_os = "windows")]
+    if let Ok(hwnd) = _win.hwnd() {
+        // 标题定位可能竞态（窗口刚建），有句柄直接再断言一次样式。
+        apply_noactivate_hwnd(hwnd);
+    }
     Ok(())
 }
 
@@ -1492,21 +1497,60 @@ fn apply_noactivate() {
             return;
         }
     };
+    apply_noactivate_hwnd(hwnd);
+}
+
+/// 给定句柄直接补 WS_EX_NOACTIVATE（创建/显示路径用 hwnd，比标题定位可靠）。
+#[cfg(target_os = "windows")]
+fn apply_noactivate_hwnd(hwnd: windows::Win32::Foundation::HWND) {
+    use windows::Win32::UI::WindowsAndMessaging::{
+        GetWindowLongPtrW, SetWindowLongPtrW, GWL_EXSTYLE, WS_EX_NOACTIVATE,
+    };
     if hwnd.is_invalid() {
         log::warn!("floating noactivate: window not found");
         return;
     }
     let old = unsafe { GetWindowLongPtrW(hwnd, GWL_EXSTYLE) };
     let new = old | (WS_EX_NOACTIVATE.0 as isize);
-    unsafe { SetWindowLongPtrW(hwnd, GWL_EXSTYLE, new) };
+    if new != old {
+        unsafe { SetWindowLongPtrW(hwnd, GWL_EXSTYLE, new) };
+    }
     let verify = unsafe { GetWindowLongPtrW(hwnd, GWL_EXSTYLE) };
     log::info!("floating noactivate: hwnd={:p} exstyle {old:#x} -> {verify:#x}", hwnd.0);
+}
+
+/// 显示悬浮窗但不激活（SW_SHOWNOACTIVATE）：单击/双击动作、设置页重显都不抢焦点。
+/// win.show() 走 SW_SHOW 会激活窗口，之前只在创建时设 NOACTIVATE，一 show 就丢。
+fn show_floating_noactivate<R: Runtime>(win: &tauri::WebviewWindow<R>) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        use windows::Win32::UI::WindowsAndMessaging::{ShowWindow, SW_SHOWNOACTIVATE};
+        match win.hwnd() {
+            Ok(hwnd) => {
+                apply_noactivate_hwnd(hwnd);
+                unsafe {
+                    ShowWindow(hwnd, SW_SHOWNOACTIVATE);
+                }
+                // ShowWindow 可能改写扩展样式，显示后再断言一次。
+                apply_noactivate_hwnd(hwnd);
+                Ok(())
+            }
+            Err(e) => {
+                log::warn!("floating show-noactivate: hwnd failed ({e}), fallback to show()");
+                win.show().map_err(|e| e.to_string())
+            }
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        win.show().map_err(|e| e.to_string())
+    }
 }
 
 #[cfg(not(target_os = "windows"))]
 fn apply_noactivate() {}
 
-/// 泛型版显隐切换。
+/// 泛型版显隐切换（显示走免激活，避免单击/双击后重显抢焦点）。
 pub fn toggle_floating_window_for<R: Runtime>(app: &AppHandle<R>) -> Result<bool, String> {
     if let Some(win) = app.get_webview_window(FLOATING_WINDOW_LABEL) {
         let visible = win.is_visible().unwrap_or(false);
@@ -1514,7 +1558,7 @@ pub fn toggle_floating_window_for<R: Runtime>(app: &AppHandle<R>) -> Result<bool
             win.hide().map_err(|e| e.to_string())?;
             Ok(false)
         } else {
-            win.show().map_err(|e| e.to_string())?;
+            show_floating_noactivate(&win)?;
             Ok(true)
         }
     } else {
@@ -1527,7 +1571,7 @@ pub fn toggle_floating_window_for<R: Runtime>(app: &AppHandle<R>) -> Result<bool
 pub fn show_floating_window(app: AppHandle) -> Result<(), String> {
     use tauri::Manager;
     if let Some(win) = app.get_webview_window(FLOATING_WINDOW_LABEL) {
-        win.show().map_err(|e| e.to_string())?;
+        show_floating_noactivate(&win)?;
         return Ok(());
     }
     show_floating_window_built(&app)

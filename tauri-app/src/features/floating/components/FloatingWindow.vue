@@ -78,16 +78,19 @@ function ftrace(msg: string) {
 const isMuted = ref(false);
 const isStreaming = ref(false);
 
-// 悬浮窗动作配置（设置页下发，默认单击发送、双击启停）。
+// 悬浮窗动作配置（设置页下发，默认单击发送、双击启停；单击/双击发送键可配不同按键）。
 const clickAction = ref('send');
 const dblclickAction = ref('toggle');
-const sendKey = ref('ralt_space');
+const sendClickKey = ref('165,32');
+const sendDblclickKey = ref('165,32');
 
 interface FloatingPrefs {
   floatingVisible: boolean;
   floatingClick: string;
   floatingDblclick: string;
   floatingSend: string;
+  floatingSendClick?: string;
+  floatingSendDblclick?: string;
 }
 
 async function loadFloatingPrefs() {
@@ -95,8 +98,10 @@ async function loadFloatingPrefs() {
     const p = await invoke<FloatingPrefs>('get_floating_prefs');
     clickAction.value = p.floatingClick || 'send';
     dblclickAction.value = p.floatingDblclick || 'toggle';
-    sendKey.value = p.floatingSend || 'ralt_space';
-    ftrace(`floating prefs: click=${clickAction.value} dbl=${dblclickAction.value} key=${sendKey.value}`);
+    const legacy = p.floatingSend || '165,32';
+    sendClickKey.value = p.floatingSendClick || legacy;
+    sendDblclickKey.value = p.floatingSendDblclick || legacy;
+    ftrace(`floating prefs: click=${clickAction.value} dbl=${dblclickAction.value} clickKey=${sendClickKey.value} dblclickKey=${sendDblclickKey.value}`);
   } catch (e) {
     console.error('get_floating_prefs failed:', e);
   }
@@ -223,7 +228,7 @@ async function doClickAction() {
   } else if (clickAction.value === 'nothing') {
     ftrace('click action: nothing');
   } else {
-    await sendKeyOnce();
+    await sendKeyOnce(sendClickKey.value);
   }
 }
 
@@ -249,7 +254,7 @@ function handleDoubleClick() {
   if (dblclickAction.value === 'show') {
     invoke('show_main_window').catch((err) => console.error('show_main_window failed:', err));
   } else if (dblclickAction.value === 'send') {
-    void sendKeyOnce();
+    void sendKeyOnce(sendDblclickKey.value);
   } else if (dblclickAction.value === 'nothing') {
     ftrace('dblclick action: nothing');
   } else {
@@ -258,10 +263,10 @@ function handleDoubleClick() {
 }
 
 /** Single click = tap the configured key once. */
-async function sendKeyOnce() {
+async function sendKeyOnce(key: string) {
   try {
-    await invoke('send_remote_key_once', { key: sendKey.value });
-    ftrace(`send key ok: ${sendKey.value}`);
+    await invoke('send_remote_key_once', { key });
+    ftrace(`send key ok: ${key}`);
   } catch (e) {
     console.error('send_remote_key_once failed:', e);
     // Surface the existing driver-missing dialog in the main window.
@@ -377,8 +382,10 @@ onMounted(async () => {
   unlistenFloatingPrefs = await listen<FloatingPrefs>('floating-prefs-changed', (event) => {
     clickAction.value = event.payload.floatingClick || 'send';
     dblclickAction.value = event.payload.floatingDblclick || 'toggle';
-    sendKey.value = event.payload.floatingSend || 'ralt_space';
-    ftrace(`floating prefs live: click=${clickAction.value} dbl=${dblclickAction.value} key=${sendKey.value}`);
+    const legacy = event.payload.floatingSend || '165,32';
+    sendClickKey.value = event.payload.floatingSendClick || legacy;
+    sendDblclickKey.value = event.payload.floatingSendDblclick || legacy;
+    ftrace(`floating prefs live: click=${clickAction.value} dbl=${dblclickAction.value} clickKey=${sendClickKey.value} dblclickKey=${sendDblclickKey.value}`);
   });
 
   await loadFloatingPrefs();

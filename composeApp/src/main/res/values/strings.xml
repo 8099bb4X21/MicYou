@@ -49,7 +49,7 @@
     <string name="closeConfirmTitle">Close Confirmation</string>
     <string name="confirm">Confirm</string>
     <string name="connectionChannelClosed">Connection channel closed.</string>
-    <string name="connectionDisconnected">Connection closed unexpectedly: remote device disconnected.</string>
+    <string name="connectionDisconnected">Remote device disconnected.</string>
     
     <string name="connectionModeLabel">Connection Mode</string>
     <string name="transportProtocolLabel">Protocol</string>

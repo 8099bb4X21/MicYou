@@ -393,26 +393,34 @@ pub fn save_ui_prefs(language: String, theme_color: String) -> Result<(), String
 }
 
 /// 悬浮窗设置读取（设置页 + 悬浮窗启动）。
+/// 老 ui.json 只有共用 floatingSend 时，click/dblclick 独立键从它迁移。
 #[tauri::command]
 pub fn get_floating_prefs() -> crate::app_config::UiPrefs {
-    crate::app_config::load_ui_prefs()
+    let mut prefs = crate::app_config::load_ui_prefs();
+    // 兼容旧三段别名：先把 legacy 归一化，再给空的新字段迁移。
+    let legacy_norm = normalize_chord(&prefs.floating_send);
+    if prefs.floating_send_click.is_empty() || prefs.floating_send_dblclick.is_empty() {
+        if prefs.floating_send_click.is_empty() {
+            prefs.floating_send_click = legacy_norm.clone();
+        }
+        if prefs.floating_send_dblclick.is_empty() {
+            prefs.floating_send_dblclick = legacy_norm.clone();
+        }
+    } else if prefs.floating_send_click == "165,32"
+        && prefs.floating_send_dblclick == "165,32"
+        && legacy_norm != "165,32"
+    {
+        // 老文件只有共用键被用户改过（如改成回车/右Alt），新字段还是默认值：整体迁移。
+        prefs.floating_send_click = legacy_norm.clone();
+        prefs.floating_send_dblclick = legacy_norm.clone();
+    }
+    prefs.floating_send = legacy_norm;
+    prefs
 }
 
-/// 悬浮窗设置保存（action 取值 send | show | toggle | nothing，send键取值 ralt | ralt_space | enter，非法回退默认）。
-#[tauri::command]
-pub fn set_floating_prefs(
-    visible: bool,
-    click: String,
-    dblclick: String,
-    send: String,
-) -> Result<(), String> {
-    fn norm(v: &str, fallback: &str) -> String {
-        match v {
-            "send" | "show" | "toggle" | "nothing" => v.to_string(),
-            _ => fallback.to_string(),
-        }
-    }
-    let send_norm = match send.as_str() {
+/// 和弦归一化：兼容旧值 ralt | ralt_space | enter，其余按逗号分隔十进制 VK 解析。
+fn normalize_chord(send: &str) -> String {
+    match send {
         "ralt" => "165".to_string(),
         "ralt_space" => "165,32".to_string(),
         "enter" => "13".to_string(),
@@ -430,12 +438,38 @@ pub fn set_floating_prefs(
                 vks.join(",")
             }
         }
-    };
+    }
+}
+
+/// 悬浮窗设置保存（action 取值 send | show | toggle | nothing，send键取值 ralt | ralt_space | enter，非法回退默认）。
+/// 单击/双击发送键独立：send_click / send_dblclick 优先，老客户端只传 send 时双键共用它。
+#[tauri::command]
+pub fn set_floating_prefs(
+    visible: bool,
+    click: String,
+    dblclick: String,
+    send: Option<String>,
+    send_click: Option<String>,
+    send_dblclick: Option<String>,
+) -> Result<(), String> {
+    fn norm(v: &str, fallback: &str) -> String {
+        match v {
+            "send" | "show" | "toggle" | "nothing" => v.to_string(),
+            _ => fallback.to_string(),
+        }
+    }
+    let legacy = send.as_deref().unwrap_or("165,32");
+    let click_raw = send_click.as_deref().unwrap_or(legacy);
+    let dblclick_raw = send_dblclick.as_deref().unwrap_or(legacy);
+    let click_norm = normalize_chord(click_raw);
+    let dblclick_norm = normalize_chord(dblclick_raw);
     let mut prefs = crate::app_config::load_ui_prefs();
     prefs.floating_visible = visible;
     prefs.floating_click = norm(&click, "send");
     prefs.floating_dblclick = norm(&dblclick, "toggle");
-    prefs.floating_send = send_norm;
+    prefs.floating_send = click_norm.clone();
+    prefs.floating_send_click = click_norm;
+    prefs.floating_send_dblclick = dblclick_norm;
     crate::app_config::save_ui_prefs(&prefs)
 }
 

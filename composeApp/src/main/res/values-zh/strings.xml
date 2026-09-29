@@ -326,7 +326,7 @@
     <string name="audioSourceVoiceRecognition">VOICE_RECOGNITION (语音识别)</string>
     <string name="audioStreamingService">音频流服务</string>
     <string name="connectionChannelClosed">连接通道已关闭</string>
-    <string name="connectionDisconnected">连接意外关闭：远程设备断开了连接</string>
+    <string name="connectionDisconnected">远程设备断开连接</string>
     
     <string name="connectionPipeBroken">管道中断：无法向已关闭的连接发送数据</string>
     <string name="connectionRejected">连接被拒绝: 请确保电脑端已开启并处于连接中状态，且电脑端已开启并等待连接</string>

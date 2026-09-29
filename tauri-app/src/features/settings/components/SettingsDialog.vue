@@ -270,6 +270,26 @@
                           </SelectGroup>
                         </SelectContent>
                       </Select>
+                      <div v-if="floatingClick === 'send'" class="mt-2">
+                        <p class="mb-1 text-xs font-semibold text-on-surface-variant">
+                          {{ $t('settings.floating.sendClickKeyLabel') }}
+                        </p>
+                        <div class="flex flex-wrap gap-1.5">
+                          <button
+                            v-for="opt in CHORD_OPTIONS"
+                            :key="'c' + opt.vk"
+                            @click="toggleChordVk(opt.vk, 'click')"
+                            class="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all active:scale-95"
+                            :class="
+                              floatingSendClickChord.includes(opt.vk)
+                                ? 'bg-primary text-on-primary shadow'
+                                : 'bg-surface-container text-on-surface-variant hover:bg-surface-variant'
+                            "
+                          >
+                            {{ $t(opt.labelKey) }}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                     <div>
                       <p class="mb-1 text-xs font-semibold text-on-surface-variant">
@@ -292,26 +312,26 @@
                           </SelectGroup>
                         </SelectContent>
                       </Select>
-                    </div>
-                  </div>
-                  <div class="mt-2">
-                    <p class="mb-1 text-xs font-semibold text-on-surface-variant">
-                      {{ $t('settings.floating.sendKeyLabel') }}
-                    </p>
-                    <div class="flex flex-wrap gap-1.5">
-                      <button
-                        v-for="opt in CHORD_OPTIONS"
-                        :key="opt.vk"
-                        @click="toggleChordVk(opt.vk)"
-                        class="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all active:scale-95"
-                        :class="
-                          floatingSendChord.includes(opt.vk)
-                            ? 'bg-primary text-on-primary shadow'
-                            : 'bg-surface-container text-on-surface-variant hover:bg-surface-variant'
-                        "
-                      >
-                        {{ $t(opt.labelKey) }}
-                      </button>
+                      <div v-if="floatingDblclick === 'send'" class="mt-2">
+                        <p class="mb-1 text-xs font-semibold text-on-surface-variant">
+                          {{ $t('settings.floating.sendDblclickKeyLabel') }}
+                        </p>
+                        <div class="flex flex-wrap gap-1.5">
+                          <button
+                            v-for="opt in CHORD_OPTIONS"
+                            :key="'d' + opt.vk"
+                            @click="toggleChordVk(opt.vk, 'dblclick')"
+                            class="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all active:scale-95"
+                            :class="
+                              floatingSendDblclickChord.includes(opt.vk)
+                                ? 'bg-primary text-on-primary shadow'
+                                : 'bg-surface-container text-on-surface-variant hover:bg-surface-variant'
+                            "
+                          >
+                            {{ $t(opt.labelKey) }}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1854,8 +1874,10 @@ const autostartEnabled = ref(false);
 const floatingVisible = ref(true);
 const floatingClick = ref('send');
 const floatingDblclick = ref('toggle');
-const floatingSend = ref('165,32');
-const floatingSendChord = ref<number[]>([165, 32]);
+const floatingSendClick = ref('165,32');
+const floatingSendDblclick = ref('165,32');
+const floatingSendClickChord = ref<number[]>([165, 32]);
+const floatingSendDblclickChord = ref<number[]>([165, 32]);
 let floatingLoaded = false;
 
 const CHORD_OPTIONS = [
@@ -1879,8 +1901,9 @@ function parseChord(raw: string): number[] {
     .slice(0, 8);
 }
 
-function toggleChordVk(vk: number) {
-  const cur = floatingSendChord.value.slice();
+function toggleChordVk(vk: number, which: 'click' | 'dblclick') {
+  const target = which === 'click' ? floatingSendClickChord : floatingSendDblclickChord;
+  const cur = target.value.slice();
   const i = cur.indexOf(vk);
   if (i >= 0) {
     if (cur.length <= 1) return; // 至少保留一个键
@@ -1888,8 +1911,12 @@ function toggleChordVk(vk: number) {
   } else {
     cur.push(vk);
   }
-  floatingSendChord.value = cur;
-  floatingSend.value = cur.join(',');
+  target.value = cur;
+  if (which === 'click') {
+    floatingSendClick.value = cur.join(',');
+  } else {
+    floatingSendDblclick.value = cur.join(',');
+  }
   void saveFloatingPrefs();
 }
 
@@ -1900,15 +1927,25 @@ async function loadFloatingPrefs() {
       floatingClick: string;
       floatingDblclick: string;
       floatingSend: string;
+      floatingSendClick?: string;
+      floatingSendDblclick?: string;
     }>('get_floating_prefs');
     floatingVisible.value = p.floatingVisible;
     floatingClick.value = p.floatingClick || 'send';
     floatingDblclick.value = p.floatingDblclick || 'toggle';
-    floatingSend.value = p.floatingSend || '165,32';
-    floatingSendChord.value = parseChord(floatingSend.value);
-    if (floatingSendChord.value.length === 0) {
-      floatingSendChord.value = [165, 32];
-      floatingSend.value = '165,32';
+    // 老版本只有共用 floatingSend，新版 click/dblclick 独立，缺失时从共用键迁移。
+    const legacy = p.floatingSend || '165,32';
+    floatingSendClick.value = p.floatingSendClick || legacy;
+    floatingSendDblclick.value = p.floatingSendDblclick || legacy;
+    floatingSendClickChord.value = parseChord(floatingSendClick.value);
+    floatingSendDblclickChord.value = parseChord(floatingSendDblclick.value);
+    if (floatingSendClickChord.value.length === 0) {
+      floatingSendClickChord.value = [165, 32];
+      floatingSendClick.value = '165,32';
+    }
+    if (floatingSendDblclickChord.value.length === 0) {
+      floatingSendDblclickChord.value = [165, 32];
+      floatingSendDblclick.value = '165,32';
     }
     floatingLoaded = true;
   } catch (e) {
@@ -1923,13 +1960,17 @@ async function saveFloatingPrefs() {
       visible: floatingVisible.value,
       click: floatingClick.value,
       dblclick: floatingDblclick.value,
-      send: floatingSend.value,
+      send: floatingSendClick.value,
+      send_click: floatingSendClick.value,
+      send_dblclick: floatingSendDblclick.value,
     });
     await tauriEmit('floating-prefs-changed', {
       floatingVisible: floatingVisible.value,
       floatingClick: floatingClick.value,
       floatingDblclick: floatingDblclick.value,
-      floatingSend: floatingSend.value,
+      floatingSend: floatingSendClick.value,
+      floatingSendClick: floatingSendClick.value,
+      floatingSendDblclick: floatingSendDblclick.value,
     });
     if (!floatingVisible.value) {
       try {

@@ -46,6 +46,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -107,7 +108,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.lanrhyme.micyou.animation.EasingFunctions
 import com.lanrhyme.micyou.animation.rememberBreathAnimation
 import com.lanrhyme.micyou.animation.rememberGlowAnimation
@@ -585,28 +588,36 @@ private fun MobileCompactStatus(
 ) {
     val isRunning = state.streamState == StreamState.Streaming
     val isConnecting = state.streamState == StreamState.Connecting
-    // 状态文字与开始/停止同一排，极致压缩给下方按钮腾高度。
-    Row(
+    // 状态文字与开始/停止同一排，极致压缩给下方按钮腾高度；
+    // 断开提示另起一行单行显示，避免挤占状态行导致换行错位。
+    Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        Box(modifier = Modifier.weight(1f)) {
-            MobileStatusText(state = state)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(modifier = Modifier.weight(1f)) {
+                MobileStatusText(state = state)
+            }
+            MobileMainButton(
+                isRunning = isRunning,
+                isConnecting = isConnecting,
+                viewModel = viewModel
+            )
         }
-        MobileMainButton(
-            isRunning = isRunning,
-            isConnecting = isConnecting,
-            viewModel = viewModel
-        )
         if (state.streamState == StreamState.Error && state.errorMessage != null) {
             Text(
                 state.errorMessage ?: "",
                 style = MaterialTheme.typography.labelSmall,
+                fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(horizontal = 24.dp),
-                maxLines = 3,
-                textAlign = TextAlign.Center
+                modifier = Modifier.fillMaxWidth().height(16.dp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Start
             )
         }
     }
@@ -829,7 +840,9 @@ private fun MobileStatusText(state: AppUiState) {
         color = color,
         modifier = Modifier.padding(vertical = 4.dp).testTag("home_status_text")
             .semantics { contentDescription = "home_status_text" },
-        textAlign = TextAlign.Center
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        textAlign = TextAlign.Start
     )
 }
 
@@ -892,9 +905,16 @@ private fun MobileMainButton(
             }
         },
         colors = ButtonDefaults.buttonColors(containerColor = containerColor),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
         modifier = Modifier.height(32.dp).testTag("home_main_button")
             .semantics { contentDescription = "home_main_button" }
     ) {
-        Text(label)
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            fontSize = 13.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
