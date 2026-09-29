@@ -1,8 +1,6 @@
 import { onMounted, onUnmounted } from "vue";
-import {
-  getCurrentWebviewWindow,
-  currentMonitor,
-} from "@tauri-apps/api/window";
+import { currentMonitor } from "@tauri-apps/api/window";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import type { UnlistenFn } from "@tauri-apps/api/event";
 import { PhysicalPosition } from "@tauri-apps/api/dpi";
 
@@ -54,7 +52,8 @@ export function useWindowPos(storageKey: string) {
       /* 无存档或显示器不可用时保持默认位置 */
     }
     try {
-      unlistenMove = await appWindow.onMoved(({ payload }) => {
+      unlistenMove = await appWindow.onMoved(
+        ({ payload }: { payload: PhysicalPosition }) => {
         try {
           localStorage.setItem(
             storageKey,

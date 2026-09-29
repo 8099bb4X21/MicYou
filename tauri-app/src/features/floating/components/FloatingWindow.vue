@@ -43,7 +43,7 @@
     <div v-if="menuOpen" class="floating-menu" :style="{ left: menuX + 'px', top: menuY + 'px' }">
       <button @click="menuShow">{{ t('tray.show') }}</button>
       <button @click="menuToggleStream">{{ isStreaming ? t('tray.stop') : t('tray.start') }}</button>
-      <button @click="menuSendKey">{{ t('tray.sendKey') }}</button>
+      <button @click="menuSendKey">{{ t('settings.floating.actionSend') }}</button>
       <button @click="menuSwitchCli">{{ t('tray.switchCli') }}</button>
       <button @click="menuSwitchTui">{{ t('tray.switchTui') }}</button>
       <button @click="menuExit">{{ t('tray.exit') }}</button>
