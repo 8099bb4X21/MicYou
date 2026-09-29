@@ -98,6 +98,13 @@ let initialWinY = 0;
 
 async function handlePointerDown(e: PointerEvent) {
   if (e.button !== 0) return;
+  // 菜单开着时：菜单内走按钮自身 click，菜单外只关菜单，都不计入单击。
+  if (menuOpen.value) {
+    if (!(e.target as HTMLElement).closest?.('.floating-menu')) {
+      void closeMenu();
+    }
+    return;
+  }
   ftrace(`pointerdown btn=0 x=${e.screenX} y=${e.screenY}`);
   isPointerDown = true;
   hasDragged = false;
@@ -271,7 +278,12 @@ async function menuShow() {
 
 async function menuToggleStream() {
   await closeMenu();
-  invoke<string>('toggle_streaming').catch((err) => console.error('toggle_streaming failed:', err));
+  invoke<string>('toggle_streaming')
+    .then((r) => ftrace(`menu toggle_streaming ok: ${r}`))
+    .catch((err) => {
+      console.error('toggle_streaming failed:', err);
+      ftrace(`menu toggle_streaming failed: ${String(err)}`);
+    });
 }
 
 async function menuSendKey() {
