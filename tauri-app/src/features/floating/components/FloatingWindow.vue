@@ -212,6 +212,10 @@ async function handleContextMenu(e: MouseEvent) {
   e.preventDefault();
   e.stopPropagation();
   ftrace('contextmenu fire');
+  // currentTarget 在 await 后会变 null，先同步取好矩形。
+  const rect = (e.currentTarget as HTMLElement | null)?.getBoundingClientRect();
+  const baseX = rect ? e.clientX - rect.left : e.clientX;
+  const baseY = rect ? e.clientY - rect.top : e.clientY;
   if (clickTimer) {
     clearTimeout(clickTimer);
     clickTimer = null;
@@ -230,9 +234,8 @@ async function handleContextMenu(e: MouseEvent) {
   } catch (e) {
     ftrace(`menu resize failed: ${String(e)}`);
   }
-  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-  menuX.value = Math.min(e.clientX - rect.left, 220 - 180);
-  menuY.value = Math.min(e.clientY - rect.top, 300 - 220);
+  menuX.value = Math.min(Math.max(0, baseX), 220 - 180);
+  menuY.value = Math.min(Math.max(0, baseY), 300 - 220);
   menuOpen.value = true;
   ftrace(`menu open at ${menuX.value},${menuY.value}`);
   // DOM self-check: is the menu actually laid out?
@@ -329,6 +332,9 @@ onMounted(async () => {
   window.addEventListener('keydown', handleKeyDown);
   window.onerror = (message) => {
     ftrace(`window.onerror: ${String(message)}`);
+  };
+  window.onunhandledrejection = (event) => {
+    ftrace(`unhandledrejection: ${String(event.reason)}`);
   };
   ftrace('floating mounted');
 });
