@@ -1460,7 +1460,7 @@ fn show_floating_window_built<R: Runtime>(app: &AppHandle<R>) -> Result<(), Stri
         FLOATING_WINDOW_LABEL,
         tauri::WebviewUrl::App("#/floating-window".into()),
     )
-    .title("MicYou")
+    .title("MicYouFloating")
     .inner_size(80.0, 80.0)
     .resizable(false)
     .decorations(false)
@@ -1471,8 +1471,34 @@ fn show_floating_window_built<R: Runtime>(app: &AppHandle<R>) -> Result<(), Stri
     .focused(false)
     .build()
     .map_err(|e| e.to_string())?;
+    apply_noactivate();
     Ok(())
 }
+
+/// 悬浮窗免激活（WS_EX_NOACTIVATE）：点击只收鼠标事件，不抢其他程序焦点。
+/// 按键注入走 HID 层，本来就不依赖焦点。用标题定位窗口，避免猜 hwnd API。
+#[cfg(target_os = "windows")]
+fn apply_noactivate() {
+    use windows::core::PCWSTR;
+    use windows::Win32::Foundation::HWND;
+    use windows::Win32::UI::WindowsAndMessaging::{
+        FindWindowW, GetWindowLongPtrW, SetWindowLongPtrW, GWL_EXSTYLE, WS_EX_NOACTIVATE,
+    };
+    let title: Vec<u16> = "MicYouFloating\0".encode_utf16().collect();
+    let hwnd = unsafe { FindWindowW(None, PCWSTR(title.as_ptr())) };
+    if hwnd == HWND(std::ptr::null_mut()) {
+        log::warn!("floating noactivate: window not found");
+        return;
+    }
+    let old = unsafe { GetWindowLongPtrW(hwnd, GWL_EXSTYLE) };
+    let new = old | (WS_EX_NOACTIVATE.0 as isize);
+    unsafe { SetWindowLongPtrW(hwnd, GWL_EXSTYLE, new) };
+    let verify = unsafe { GetWindowLongPtrW(hwnd, GWL_EXSTYLE) };
+    log::info!("floating noactivate: hwnd={hwnd:?} exstyle {old:#x} -> {verify:#x}");
+}
+
+#[cfg(not(target_os = "windows"))]
+fn apply_noactivate() {}
 
 /// 泛型版显隐切换。
 pub fn toggle_floating_window_for<R: Runtime>(app: &AppHandle<R>) -> Result<bool, String> {
