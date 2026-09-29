@@ -1480,13 +1480,19 @@ fn show_floating_window_built<R: Runtime>(app: &AppHandle<R>) -> Result<(), Stri
 #[cfg(target_os = "windows")]
 fn apply_noactivate() {
     use windows::core::PCWSTR;
-    use windows::Win32::Foundation::HWND;
     use windows::Win32::UI::WindowsAndMessaging::{
         FindWindowW, GetWindowLongPtrW, SetWindowLongPtrW, GWL_EXSTYLE, WS_EX_NOACTIVATE,
     };
     let title: Vec<u16> = "MicYouFloating\0".encode_utf16().collect();
-    let hwnd = unsafe { FindWindowW(None, PCWSTR(title.as_ptr())) };
-    if hwnd == HWND(std::ptr::null_mut()) {
+    // windows 0.58 起 FindWindowW 返回 Result。
+    let hwnd = match unsafe { FindWindowW(None, PCWSTR(title.as_ptr())) } {
+        Ok(h) => h,
+        Err(e) => {
+            log::warn!("floating noactivate: FindWindowW failed: {e}");
+            return;
+        }
+    };
+    if hwnd.is_invalid() {
         log::warn!("floating noactivate: window not found");
         return;
     }
@@ -1494,7 +1500,7 @@ fn apply_noactivate() {
     let new = old | (WS_EX_NOACTIVATE.0 as isize);
     unsafe { SetWindowLongPtrW(hwnd, GWL_EXSTYLE, new) };
     let verify = unsafe { GetWindowLongPtrW(hwnd, GWL_EXSTYLE) };
-    log::info!("floating noactivate: hwnd={hwnd:?} exstyle {old:#x} -> {verify:#x}");
+    log::info!("floating noactivate: hwnd={} exstyle {old:#x} -> {verify:#x}", hwnd.0);
 }
 
 #[cfg(not(target_os = "windows"))]
