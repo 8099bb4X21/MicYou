@@ -126,6 +126,10 @@ async function handlePointerMove(e: PointerEvent) {
   if (!hasDragged && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
     hasDragged = true;
     ftrace('drag start');
+    // 先放掉指针捕获再交 OS 拖拽，否则 mouse-up 被吞，下一次点击被当成拖拽收尾。
+    try {
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {}
     try {
       await appWindow.startDragging();
       ftrace('drag startDragging ok');
@@ -136,7 +140,14 @@ async function handlePointerMove(e: PointerEvent) {
     }
   }
 
+  // 兜底：若 OS 拖拽吞掉了 mouse-up，此后无按键的移动直接收尾，避免窗跟光标跑。
   if (hasDragged) {
+    if (e.buttons === 0) {
+      isPointerDown = false;
+      hasDragged = false;
+      ftrace('drag auto-release (no buttons)');
+      return;
+    }
     const scale = window.devicePixelRatio || 1;
     const targetX = Math.round(initialWinX + dx * scale);
     const targetY = Math.round(initialWinY + dy * scale);
