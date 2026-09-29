@@ -13,17 +13,19 @@
       class="floating-svg"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <!-- Static blue disc -->
-      <circle cx="20" cy="20" r="18" fill="#2563eb" fill-opacity="0.92" />
-      <!-- Thin white ring, brighter while streaming (static, no animation) -->
-      <circle
-        cx="20"
-        cy="20"
-        r="15"
+      <!-- Static square blue background -->
+      <rect x="1" y="1" width="38" height="38" rx="10" fill="#2563eb" fill-opacity="0.92" />
+      <!-- Thin white frame, brighter while streaming (static, no animation) -->
+      <rect
+        x="4.5"
+        y="4.5"
+        width="31"
+        height="31"
+        rx="7"
         fill="none"
         stroke="#ffffff"
         :stroke-opacity="isStreaming ? 0.9 : 0.35"
-        stroke-width="2"
+        stroke-width="1.6"
       />
       <!-- Minimalist white microphone -->
       <rect x="17" y="8" width="6" height="12" rx="3" fill="#ffffff" />
@@ -123,10 +125,13 @@ async function handlePointerMove(e: PointerEvent) {
 
   if (!hasDragged && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
     hasDragged = true;
+    ftrace('drag start');
     try {
       await appWindow.startDragging();
+      ftrace('drag startDragging ok');
       return;
-    } catch {
+    } catch (e) {
+      ftrace(`drag startDragging failed: ${String(e)}`);
       // Fallback to manual setPosition if startDragging is not available
     }
   }
@@ -208,7 +213,10 @@ async function handleContextMenu(e: MouseEvent) {
   // Enlarge the window so the menu fits; restore on close.
   try {
     await appWindow.setSize(new LogicalSize(220, 300));
-  } catch {}
+    ftrace('menu resize ok');
+  } catch (e) {
+    ftrace(`menu resize failed: ${String(e)}`);
+  }
   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
   menuX.value = Math.min(e.clientX - rect.left, 220 - 180);
   menuY.value = Math.min(e.clientY - rect.top, 300 - 220);
