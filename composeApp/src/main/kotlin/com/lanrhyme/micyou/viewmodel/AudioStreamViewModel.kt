@@ -27,7 +27,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.lanrhyme.micyou.audio.AudioEngine
 import com.lanrhyme.micyou.audio.AudioFormat
 import com.lanrhyme.micyou.audio.ChannelCount
