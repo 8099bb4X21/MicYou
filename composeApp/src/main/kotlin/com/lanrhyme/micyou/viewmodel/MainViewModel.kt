@@ -112,6 +112,7 @@ data class AppUiState(
     val allowRemoteWake: Boolean = true,
     val volumeChordUp: List<Int> = emptyList(),
     val volumeChordDown: List<Int> = emptyList(),
+    val buttonSlots: List<com.lanrhyme.micyou.settings.ButtonSlot> = emptyList(),
     val autoCheckUpdate: Boolean = true,
     val useMirrorDownload: Boolean = false,
     val mirrorCdk: String = "",
@@ -240,6 +241,7 @@ class MainViewModel : ViewModel() {
                         allowRemoteWake = settingsState.allowRemoteWake,
                         volumeChordUp = settingsState.volumeChordUp,
                         volumeChordDown = settingsState.volumeChordDown,
+                        buttonSlots = settingsState.buttonSlots,
                         autoCheckUpdate = settingsState.autoCheckUpdate,
                         useMirrorDownload = settingsState.useMirrorDownload,
                         mirrorCdk = settingsState.mirrorCdk,
@@ -309,6 +311,7 @@ class MainViewModel : ViewModel() {
     fun setAllowRemoteWake(enabled: Boolean) = settingsViewModel.setAllowRemoteWake(enabled)
     fun setVolumeChordUp(vks: List<Int>) = settingsViewModel.setVolumeChordUp(vks)
     fun setVolumeChordDown(vks: List<Int>) = settingsViewModel.setVolumeChordDown(vks)
+    fun setButtonSlot(index: Int, slot: com.lanrhyme.micyou.settings.ButtonSlot) = settingsViewModel.setButtonSlot(index, slot)
     fun setVisualizerStyle(style: VisualizerStyle) = settingsViewModel.setVisualizerStyle(style)
     fun setAutoCheckUpdate(enabled: Boolean) = settingsViewModel.setAutoCheckUpdate(enabled)
     fun setUseMirrorDownload(enabled: Boolean) = settingsViewModel.setUseMirrorDownload(enabled)

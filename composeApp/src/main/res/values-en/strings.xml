@@ -209,6 +209,9 @@
     <string name="chordKeyLWin">LWin</string>
     <string name="chordKeyRWin">RWin</string>
     <string name="chordKeySpace">Space</string>
+    <string name="buttonSlotLabel">Button %1$d</string>
+    <string name="buttonSlotMute">Mute</string>
+    <string name="buttonSlotKey">Key</string>
     <string name="languageLabel">Language</string>
     
     <string name="licensesTitle">Open Source Libraries and Licenses</string>

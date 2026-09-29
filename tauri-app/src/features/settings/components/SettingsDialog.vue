@@ -298,22 +298,21 @@
                     <p class="mb-1 text-xs font-semibold text-on-surface-variant">
                       {{ $t('settings.floating.sendKeyLabel') }}
                     </p>
-                    <Select v-model="floatingSend" @update:model-value="saveFloatingPrefs()">
-                      <SelectTrigger
-                        class="w-full bg-surface-container border-none shadow-none rounded-lg text-sm font-medium"
+                    <div class="flex flex-wrap gap-1.5">
+                      <button
+                        v-for="opt in CHORD_OPTIONS"
+                        :key="opt.vk"
+                        @click="toggleChordVk(opt.vk)"
+                        class="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all active:scale-95"
+                        :class="
+                          floatingSendChord.includes(opt.vk)
+                            ? 'bg-primary text-on-primary shadow'
+                            : 'bg-surface-container text-on-surface-variant hover:bg-surface-variant'
+                        "
                       >
-                        <SelectValue placeholder="Key" />
-                      </SelectTrigger>
-                      <SelectContent
-                        class="border-surface-variant/20 rounded-lg bg-surface shadow-lg"
-                      >
-                        <SelectGroup>
-                          <SelectItem value="ralt_space">{{ $t('settings.floating.keyRaltSpace') }}</SelectItem>
-                          <SelectItem value="ralt">{{ $t('settings.floating.keyRalt') }}</SelectItem>
-                          <SelectItem value="enter">{{ $t('settings.floating.keyEnter') }}</SelectItem>
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
+                        {{ $t(opt.labelKey) }}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -1855,8 +1854,44 @@ const autostartEnabled = ref(false);
 const floatingVisible = ref(true);
 const floatingClick = ref('send');
 const floatingDblclick = ref('toggle');
-const floatingSend = ref('ralt_space');
+const floatingSend = ref('165,32');
+const floatingSendChord = ref<number[]>([165, 32]);
 let floatingLoaded = false;
+
+const CHORD_OPTIONS = [
+  { vk: 162, labelKey: 'settings.floating.keyLCtrl' },
+  { vk: 163, labelKey: 'settings.floating.keyRCtrl' },
+  { vk: 164, labelKey: 'settings.floating.keyLAlt' },
+  { vk: 165, labelKey: 'settings.floating.keyRAlt' },
+  { vk: 91, labelKey: 'settings.floating.keyLWin' },
+  { vk: 92, labelKey: 'settings.floating.keyRWin' },
+  { vk: 32, labelKey: 'settings.floating.keySpace' },
+  { vk: 13, labelKey: 'settings.floating.keyEnter' },
+];
+
+function parseChord(raw: string): number[] {
+  const valid = new Set(CHORD_OPTIONS.map((o) => o.vk));
+  return raw
+    .split(',')
+    .map((s) => Number(s.trim()))
+    .filter((n) => Number.isInteger(n) && valid.has(n))
+    .filter((n, i, a) => a.indexOf(n) === i)
+    .slice(0, 8);
+}
+
+function toggleChordVk(vk: number) {
+  const cur = floatingSendChord.value.slice();
+  const i = cur.indexOf(vk);
+  if (i >= 0) {
+    if (cur.length <= 1) return; // 至少保留一个键
+    cur.splice(i, 1);
+  } else {
+    cur.push(vk);
+  }
+  floatingSendChord.value = cur;
+  floatingSend.value = cur.join(',');
+  void saveFloatingPrefs();
+}
 
 async function loadFloatingPrefs() {
   try {
@@ -1869,7 +1904,12 @@ async function loadFloatingPrefs() {
     floatingVisible.value = p.floatingVisible;
     floatingClick.value = p.floatingClick || 'send';
     floatingDblclick.value = p.floatingDblclick || 'toggle';
-    floatingSend.value = p.floatingSend || 'ralt_space';
+    floatingSend.value = p.floatingSend || '165,32';
+    floatingSendChord.value = parseChord(floatingSend.value);
+    if (floatingSendChord.value.length === 0) {
+      floatingSendChord.value = [165, 32];
+      floatingSend.value = '165,32';
+    }
     floatingLoaded = true;
   } catch (e) {
     console.error('get_floating_prefs failed:', e);

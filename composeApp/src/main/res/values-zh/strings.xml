@@ -175,6 +175,9 @@
     <string name="chordKeyLWin">左Win</string>
     <string name="chordKeyRWin">右Win</string>
     <string name="chordKeySpace">空格</string>
+    <string name="buttonSlotLabel">按键%1$d</string>
+    <string name="buttonSlotMute">静音</string>
+    <string name="buttonSlotKey">按键</string>
     <string name="languageLabel">语言</string>
     
     <string name="licensesTitle">开源库和许可证</string>

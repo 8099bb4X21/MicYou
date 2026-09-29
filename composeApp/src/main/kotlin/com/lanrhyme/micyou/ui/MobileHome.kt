@@ -138,9 +138,6 @@ import com.lanrhyme.micyou.viewmodel.ConnectionMode
 import com.lanrhyme.micyou.viewmodel.MainViewModel
 import com.lanrhyme.micyou.viewmodel.StreamState
 import com.lanrhyme.micyou.viewmodel.VisualizerStyle
-import com.lanrhyme.micyou.network.REMOTE_KEY_ALT_SPACE
-import com.lanrhyme.micyou.network.REMOTE_KEY_ENTER
-import com.lanrhyme.micyou.network.REMOTE_KEY_RALT
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -637,24 +634,16 @@ private fun MobileBottomBar(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             val streaming = state.streamState == StreamState.Streaming
+            val slots = state.buttonSlots
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Box(modifier = Modifier.weight(1f)) {
-                    MobileMuteButton(
-                        isMuted = state.isMuted,
-                        onToggle = { viewModel.toggleMute() }
-                    )
+                    BottomSlotButton(index = 0, slots = slots, streaming = streaming, state = state, viewModel = viewModel)
                 }
                 Box(modifier = Modifier.weight(1f)) {
-                    MobileRemoteKeyButton(
-                        label = stringResource(R.string.remoteKeyRalt),
-                        testTag = "home_key_ralt",
-                        enabled = streaming,
-                        onDown = { viewModel.remoteKeyDown(REMOTE_KEY_RALT) },
-                        onUp = { viewModel.remoteKeyUp(REMOTE_KEY_RALT) }
-                    )
+                    BottomSlotButton(index = 1, slots = slots, streaming = streaming, state = state, viewModel = viewModel)
                 }
             }
             Row(
@@ -662,22 +651,10 @@ private fun MobileBottomBar(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Box(modifier = Modifier.weight(1f)) {
-                    MobileRemoteKeyButton(
-                        label = stringResource(R.string.remoteKeyAltSpace),
-                        testTag = "home_key_altspace",
-                        enabled = streaming,
-                        onDown = { viewModel.remoteKeyDown(REMOTE_KEY_ALT_SPACE) },
-                        onUp = { viewModel.remoteKeyUp(REMOTE_KEY_ALT_SPACE) }
-                    )
+                    BottomSlotButton(index = 2, slots = slots, streaming = streaming, state = state, viewModel = viewModel)
                 }
                 Box(modifier = Modifier.weight(1f)) {
-                    MobileRemoteKeyButton(
-                        label = stringResource(R.string.remoteKeyEnter),
-                        testTag = "home_key_enter",
-                        enabled = streaming,
-                        onDown = { viewModel.remoteKeyDown(REMOTE_KEY_ENTER) },
-                        onUp = { viewModel.remoteKeyUp(REMOTE_KEY_ENTER) }
-                    )
+                    BottomSlotButton(index = 3, slots = slots, streaming = streaming, state = state, viewModel = viewModel)
                 }
             }
             Row(
@@ -698,6 +675,35 @@ private fun MobileBottomBar(
                 ) {}
             }
         }
+    }
+}
+
+@Composable
+private fun BottomSlotButton(
+    index: Int,
+    slots: List<com.lanrhyme.micyou.settings.ButtonSlot>,
+    streaming: Boolean,
+    state: AppUiState,
+    viewModel: MainViewModel
+) {
+    val slot = slots.getOrElse(index) {
+        com.lanrhyme.micyou.settings.DEFAULT_BUTTON_SLOTS[index]
+    }
+    val tag = "home_btn_" + (index + 1)
+    if (slot.type == "mute") {
+        MobileMuteButton(
+            isMuted = state.isMuted,
+            onToggle = { viewModel.toggleMute() },
+            testTag = tag
+        )
+    } else {
+        MobileRemoteKeyButton(
+            label = chordSummary(slot.chord),
+            testTag = tag,
+            enabled = streaming,
+            onDown = { viewModel.remoteChordDown(slot.chord) },
+            onUp = { viewModel.remoteChordUp(slot.chord) }
+        )
     }
 }
 
@@ -755,7 +761,8 @@ private fun MobileRemoteKeyButton(
 @Composable
 private fun MobileMuteButton(
     isMuted: Boolean,
-    onToggle: () -> Unit
+    onToggle: () -> Unit,
+    testTag: String = "home_mute"
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -777,8 +784,8 @@ private fun MobileMuteButton(
     Surface(
         shape = MaterialTheme.shapes.small,
         color = bgColor,
-        modifier = Modifier.fillMaxWidth().scale(scale).testTag("home_mute")
-            .semantics { contentDescription = "home_mute" }.clickable(interactionSource, null) { onToggle() }
+        modifier = Modifier.fillMaxWidth().scale(scale).testTag(testTag)
+            .semantics { contentDescription = testTag }.clickable(interactionSource, null) { onToggle() }
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 16.dp),
@@ -885,7 +892,7 @@ private fun MobileMainButton(
             }
         },
         colors = ButtonDefaults.buttonColors(containerColor = containerColor),
-        modifier = Modifier.testTag("home_main_button")
+        modifier = Modifier.height(32.dp).testTag("home_main_button")
             .semantics { contentDescription = "home_main_button" }
     ) {
         Text(label)

@@ -105,9 +105,15 @@
       "actionToggle": "开始/停止推流",
       "actionShow": "显示主窗口",
       "actionNothing": "无动作",
-      "sendKeyLabel": "发送按键",
-      "keyRalt": "右Alt",
-      "keyRaltSpace": "右Alt+空格",
+      "sendKeyLabel": "发送按键（多选）",
+      "sendKeyCustom": "发送自定义按键",
+      "keyLCtrl": "左Ctrl",
+      "keyRCtrl": "右Ctrl",
+      "keyLAlt": "左Alt",
+      "keyRAlt": "右Alt",
+      "keyLWin": "左Win",
+      "keyRWin": "右Win",
+      "keySpace": "空格",
       "keyEnter": "回车"
     },
     "theme": {

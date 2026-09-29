@@ -1685,16 +1685,25 @@ pub fn send_wake() -> Result<String, String> {
     }
 }
 
-/// 悬浮窗发送键：按配置点一次对应按键。key 取值 ralt | ralt_space | enter，
-/// 缺省 ralt_space；无驱动返回 Err，前端据此弹缺驱动提示。
+/// 悬浮窗发送键：按配置点一次自定义和弦。key 为逗号分隔十进制 VK（如 "165,32"），
+/// 兼容旧值 ralt | ralt_space | enter；缺省右Alt+空格。无驱动返回 Err。
 #[tauri::command]
 pub fn send_remote_key_once(key: Option<String>) -> Result<(), String> {
-    let key_id = match key.as_deref() {
-        Some("ralt") => crate::remote_key::KEY_RALT,
-        Some("enter") => crate::remote_key::KEY_ENTER,
-        _ => crate::remote_key::KEY_ALT_SPACE,
+    let vks: Vec<u16> = match key.as_deref() {
+        Some("ralt") => vec![0xA5],
+        Some("enter") => vec![0x0D],
+        Some("ralt_space") | None => vec![0xA5, 0x20],
+        Some(custom) => custom
+            .split(',')
+            .filter_map(|s| s.trim().parse::<u16>().ok())
+            .filter(|vk| *vk <= 0xFF)
+            .take(8)
+            .collect(),
     };
-    crate::remote_key::tap(key_id)
+    if vks.is_empty() {
+        return Err("empty chord".into());
+    }
+    crate::remote_key::tap_vks(&vks)
 }
 
 /// 悬浮窗取证日志：前端交互事件直写应用日志（设置页可导出）。

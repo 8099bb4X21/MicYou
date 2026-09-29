@@ -20,6 +20,9 @@ import androidx.lifecycle.viewModelScope
 import com.lanrhyme.micyou.network.CHORD_KEY_OPTIONS
 import com.lanrhyme.micyou.network.DEFAULT_CHORD_DOWN
 import com.lanrhyme.micyou.network.DEFAULT_CHORD_UP
+import com.lanrhyme.micyou.network.VK_RALT
+import com.lanrhyme.micyou.network.VK_SPACE
+import com.lanrhyme.micyou.network.VK_ENTER
 import com.lanrhyme.micyou.network.chordToString
 import com.lanrhyme.micyou.network.parseChordString
 import com.lanrhyme.micyou.theme.PaletteStyle
@@ -40,6 +43,21 @@ import com.lanrhyme.micyou.ui.background.BackgroundSettings
 import com.lanrhyme.micyou.util.AppLanguage
 import com.lanrhyme.micyou.util.Logger
 import com.lanrhyme.micyou.viewmodel.VisualizerStyle
+
+/** 底部按键槽位：type=mute（静音功能）或 key（和弦按键）。 */
+data class ButtonSlot(
+    val type: String = "key",
+    val chord: List<Int> = emptyList()
+)
+
+/** 四槽默认：静音 / 右Alt / 右Alt+空格 / 回车。 */
+val DEFAULT_BUTTON_SLOTS = listOf(
+    ButtonSlot(type = "mute", chord = emptyList()),
+    ButtonSlot(type = "key", chord = listOf(VK_RALT)),
+    ButtonSlot(type = "key", chord = listOf(VK_RALT, VK_SPACE)),
+    ButtonSlot(type = "key", chord = listOf(VK_ENTER))
+)
+
 data class SettingsUiState(
     val themeMode: ThemeMode = ThemeMode.System,
     val seedColor: Long = 0xFF4A672D,
@@ -57,6 +75,7 @@ data class SettingsUiState(
     val allowRemoteWake: Boolean = true,
     val volumeChordUp: List<Int> = DEFAULT_CHORD_UP,
     val volumeChordDown: List<Int> = DEFAULT_CHORD_DOWN,
+    val buttonSlots: List<ButtonSlot> = DEFAULT_BUTTON_SLOTS,
     val autoCheckUpdate: Boolean = true,
     val useMirrorDownload: Boolean = false,
     val mirrorCdk: String = "",
@@ -100,6 +119,11 @@ class SettingsViewModel : ViewModel() {
     val savedAllowRemoteWake = settings.getBoolean("allow_remote_wake", true)
     val savedVolumeChordUp = parseChordString(settings.getString("volume_chord_up", "")).ifEmpty { DEFAULT_CHORD_UP }
     val savedVolumeChordDown = parseChordString(settings.getString("volume_chord_down", "")).ifEmpty { DEFAULT_CHORD_DOWN }
+    val savedButtonSlots = (1..4).map { i ->
+        val type = settings.getString("btn${i}_type", if (i == 1) "mute" else "key")
+        val chord = parseChordString(settings.getString("btn${i}_chord", "")).ifEmpty { DEFAULT_BUTTON_SLOTS[i - 1].chord }
+        ButtonSlot(type = if (type == "mute") "mute" else "key", chord = chord)
+    }
     val savedVisualizerStyleName = settings.getString("visualizer_style", VisualizerStyle.VolumeRing.name)
     val savedVisualizerStyle = try {
             VisualizerStyle.valueOf(savedVisualizerStyleName)
@@ -138,6 +162,7 @@ class SettingsViewModel : ViewModel() {
                 allowRemoteWake = savedAllowRemoteWake,
                 volumeChordUp = savedVolumeChordUp,
                 volumeChordDown = savedVolumeChordDown,
+                buttonSlots = savedButtonSlots,
                 visualizerStyle = savedVisualizerStyle,
                 backgroundSettings = BackgroundSettings(
                     imagePath = savedBackgroundImagePath,
@@ -233,6 +258,21 @@ class SettingsViewModel : ViewModel() {
         val clean = vks.filter { it in CHORD_KEY_OPTIONS }.distinct()
         _uiState.update { it.copy(volumeChordDown = clean) }
         settings.putString("volume_chord_down", chordToString(clean))
+    }
+
+    fun setButtonSlot(index: Int, slot: ButtonSlot) {
+        if (index !in 0..3) return
+        val clean = if (slot.type == "mute") {
+            ButtonSlot(type = "mute", chord = emptyList())
+        } else {
+            ButtonSlot(type = "key", chord = slot.chord.filter { it in CHORD_KEY_OPTIONS }.distinct())
+        }
+        if (clean.type == "key" && clean.chord.isEmpty()) return
+        _uiState.update { st ->
+            st.copy(buttonSlots = st.buttonSlots.toMutableList().also { it[index] = clean })
+        }
+        settings.putString("btn${index + 1}_type", clean.type)
+        settings.putString("btn${index + 1}_chord", chordToString(clean.chord))
     }
 
     fun setVisualizerStyle(style: VisualizerStyle) {

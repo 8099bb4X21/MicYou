@@ -78,13 +78,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.lanrhyme.micyou.network.CHORD_KEY_OPTIONS
 import com.lanrhyme.micyou.network.VK_ENTER
-import com.lanrhyme.micyou.network.VK_LALT
-import com.lanrhyme.micyou.network.VK_LCTRL
-import com.lanrhyme.micyou.network.VK_LWIN
 import com.lanrhyme.micyou.network.VK_RALT
-import com.lanrhyme.micyou.network.VK_RCTRL
-import com.lanrhyme.micyou.network.VK_RWIN
 import com.lanrhyme.micyou.network.VK_SPACE
+import com.lanrhyme.micyou.settings.ButtonSlot
+import com.lanrhyme.micyou.network.VK_RALT
+import com.lanrhyme.micyou.settings.ButtonSlot
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -279,31 +277,77 @@ private fun SectionHeader(title: String) {
     }
 }
 
+/** 底部按键槽位配置行：类型二选一，选按键时多选和弦（即时保存）。 */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun chordVkName(vk: Int): String {
-    return when (vk) {
-        VK_LCTRL -> stringResource(R.string.chordKeyLCtrl)
-        VK_RCTRL -> stringResource(R.string.chordKeyRCtrl)
-        VK_LALT -> stringResource(R.string.chordKeyLAlt)
-        VK_RALT -> stringResource(R.string.chordKeyRAlt)
-        VK_LWIN -> stringResource(R.string.chordKeyLWin)
-        VK_RWIN -> stringResource(R.string.chordKeyRWin)
-        VK_SPACE -> stringResource(R.string.chordKeySpace)
-        VK_ENTER -> stringResource(R.string.remoteKeyEnter)
-        else -> "0x" + vk.toString(16).uppercase()
+private fun ButtonSlotRow(
+    index: Int,
+    slot: ButtonSlot,
+    viewModel: MainViewModel
+) {
+    Surface(
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceBright,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    stringResource(R.string.buttonSlotLabel, index + 1),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = slot.type == "mute",
+                        onClick = {
+                            viewModel.setButtonSlot(index, ButtonSlot("mute", emptyList()))
+                        },
+                        label = { Text(stringResource(R.string.buttonSlotMute)) }
+                    )
+                    FilterChip(
+                        selected = slot.type == "key",
+                        onClick = {
+                            if (slot.type != "key") {
+                                val base = slot.chord.ifEmpty { listOf(VK_RALT) }
+                                viewModel.setButtonSlot(index, ButtonSlot("key", base))
+                            }
+                        },
+                        label = { Text(stringResource(R.string.buttonSlotKey)) }
+                    )
+                }
+            }
+            if (slot.type == "key") {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    CHORD_KEY_OPTIONS.forEach { vk ->
+                        FilterChip(
+                            selected = slot.chord.contains(vk),
+                            onClick = {
+                                val cur = slot.chord.toMutableList()
+                                if (cur.contains(vk)) {
+                                    if (cur.size > 1) cur.remove(vk)
+                                } else {
+                                    cur.add(vk)
+                                }
+                                viewModel.setButtonSlot(index, ButtonSlot("key", cur.toList()))
+                            },
+                            label = { Text(chordVkName(vk)) }
+                        )
+                    }
+                }
+            }
+        }
     }
-}
-
-@Composable
-private fun chordSummary(vks: List<Int>): String {
-    if (vks.isEmpty()) return stringResource(R.string.chordEmpty)
-    // 注意：joinToString/map等高阶lambda内不能调@Composable，只能用for循环。
-    val sb = StringBuilder()
-    for ((i, vk) in vks.withIndex()) {
-        if (i > 0) sb.append('+')
-        sb.append(chordVkName(vk))
-    }
-    return sb.toString()
 }
 
 /** 音量和弦配置行：显示当前组合，点击弹多选框。 */
@@ -473,6 +517,38 @@ private fun LazyListScope.generalSettingsItems(
                 title = stringResource(R.string.volumeChordDownLabel),
                 current = state.volumeChordDown,
                 onSave = { viewModel.setVolumeChordDown(it) }
+            )
+        }
+
+        items.add { _, _ ->
+            ButtonSlotRow(
+                index = 0,
+                slot = state.buttonSlots.getOrElse(0) { ButtonSlot("mute", emptyList()) },
+                viewModel = viewModel
+            )
+        }
+
+        items.add { _, _ ->
+            ButtonSlotRow(
+                index = 1,
+                slot = state.buttonSlots.getOrElse(1) { ButtonSlot("key", listOf(VK_RALT)) },
+                viewModel = viewModel
+            )
+        }
+
+        items.add { _, _ ->
+            ButtonSlotRow(
+                index = 2,
+                slot = state.buttonSlots.getOrElse(2) { ButtonSlot("key", listOf(VK_RALT, VK_SPACE)) },
+                viewModel = viewModel
+            )
+        }
+
+        items.add { _, _ ->
+            ButtonSlotRow(
+                index = 3,
+                slot = state.buttonSlots.getOrElse(3) { ButtonSlot("key", listOf(VK_ENTER)) },
+                viewModel = viewModel
             )
         }
 

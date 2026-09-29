@@ -136,7 +136,7 @@ fn default_dblclick_action() -> String {
 }
 
 fn default_send_key() -> String {
-    "ralt_space".to_string()
+    "165,32".to_string()
 }
 
 pub fn load_ui_prefs() -> UiPrefs {

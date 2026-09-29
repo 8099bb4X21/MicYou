@@ -105,9 +105,15 @@
       "actionToggle": "Start/Stop streaming",
       "actionShow": "Show main window",
       "actionNothing": "Do nothing",
-      "sendKeyLabel": "Send key",
-      "keyRalt": "Right Alt",
-      "keyRaltSpace": "Right Alt + Space",
+      "sendKeyLabel": "Send key (multi-select)",
+      "sendKeyCustom": "Send custom key",
+      "keyLCtrl": "LCtrl",
+      "keyRCtrl": "RCtrl",
+      "keyLAlt": "LAlt",
+      "keyRAlt": "RAlt",
+      "keyLWin": "LWin",
+      "keyRWin": "RWin",
+      "keySpace": "Space",
       "keyEnter": "Enter"
     },
     "theme": {

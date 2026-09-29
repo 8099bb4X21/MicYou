@@ -413,8 +413,23 @@ pub fn set_floating_prefs(
         }
     }
     let send_norm = match send.as_str() {
-        "ralt" | "ralt_space" | "enter" => send,
-        _ => "ralt_space".to_string(),
+        "ralt" => "165".to_string(),
+        "ralt_space" => "165,32".to_string(),
+        "enter" => "13".to_string(),
+        custom => {
+            let vks: Vec<String> = custom
+                .split(',')
+                .filter_map(|s| s.trim().parse::<u16>().ok())
+                .filter(|vk| *vk <= 0xFF)
+                .take(8)
+                .map(|vk| vk.to_string())
+                .collect();
+            if vks.is_empty() {
+                "165,32".to_string()
+            } else {
+                vks.join(",")
+            }
+        }
     };
     let mut prefs = crate::app_config::load_ui_prefs();
     prefs.floating_visible = visible;

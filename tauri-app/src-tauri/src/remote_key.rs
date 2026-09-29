@@ -435,14 +435,22 @@ pub fn release(vks: &[u16]) -> Result<(), String> {
 /// 点一下：DOWN→80ms→UP。托盘菜单、悬浮窗、取证命令共用。
 pub fn tap(key_id: u8) -> Result<(), String> {
     let vks = vks_for_key(key_id).ok_or_else(|| format!("unknown remote key {key_id}"))?;
+    tap_vks(&vks)
+}
+
+/// 点一下自定义和弦（VK 直传，与安卓和弦选择器对齐）。
+pub fn tap_vks(vks: &[u16]) -> Result<(), String> {
+    if vks.is_empty() || vks.len() > 8 {
+        return Err(format!("bad chord len {}", vks.len()));
+    }
     if !is_available() {
         log::warn!("remote-key tap: WinUHid unavailable");
         return Err("WinUHid unavailable".into());
     }
-    press(&vks)?;
+    press(vks)?;
     std::thread::sleep(Duration::from_millis(80));
-    release(&vks)?;
-    log::info!("remote-key tap done key_id={key_id}");
+    release(vks)?;
+    log::info!("remote-key tap done vks={vks:?}");
     Ok(())
 }
 
