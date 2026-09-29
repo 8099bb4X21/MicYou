@@ -437,19 +437,19 @@ private fun ConnectionConfigCard(
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .height(48.dp)
+                            .height(36.dp)
                             .clip(MaterialTheme.shapes.medium)
                             .background(bgColor)
                             .hoverable(interactionSource = remember { MutableInteractionSource() })
                             .clickable { viewModel.setMode(mode) }
                     ) {
-                        Column(
+                        Row(
                             modifier = Modifier.fillMaxSize(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
                         ) {
-                            Icon(icon, null, tint = contentColor, modifier = Modifier.size(20.dp))
-                            Spacer(Modifier.height(2.dp))
+                            Icon(icon, null, tint = contentColor, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
                             Text(
                                 label,
                                 style = MaterialTheme.typography.labelSmall,
@@ -589,37 +589,33 @@ private fun MobileCompactStatus(
     val isRunning = state.streamState == StreamState.Streaming
     val isConnecting = state.streamState == StreamState.Connecting
     // 状态文字与开始/停止同一排，极致压缩给下方按钮腾高度；
-    // 断开提示另起一行单行显示，避免挤占状态行导致换行错位。
-    Column(
+    // 错误态第一行直接显示断开原因（“远程设备断开连接”），不再保留“连接异常”+第二行。
+    Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp)
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Box(modifier = Modifier.weight(1f)) {
+        Box(modifier = Modifier.weight(1f)) {
+            if (state.streamState == StreamState.Error && state.errorMessage != null) {
+                Text(
+                    state.errorMessage ?: "",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(vertical = 4.dp).testTag("home_status_text")
+                        .semantics { contentDescription = "home_status_text" },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Start
+                )
+            } else {
                 MobileStatusText(state = state)
             }
-            MobileMainButton(
-                isRunning = isRunning,
-                isConnecting = isConnecting,
-                viewModel = viewModel
-            )
         }
-        if (state.streamState == StreamState.Error && state.errorMessage != null) {
-            Text(
-                state.errorMessage ?: "",
-                style = MaterialTheme.typography.labelSmall,
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.fillMaxWidth().height(16.dp),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Start
-            )
-        }
+        MobileMainButton(
+            isRunning = isRunning,
+            isConnecting = isConnecting,
+            viewModel = viewModel
+        )
     }
 }
 
