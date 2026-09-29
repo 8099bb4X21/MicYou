@@ -171,8 +171,13 @@ function handleDoubleClick() {
     clickTimer = null;
   }
   closeMenu();
-  // Reuse main-window toggle logic (settings context lives there).
-  emit('tray-action', 'toggle_stream').catch((err) => console.error('toggle_stream failed:', err));
+  // 独立启停，不依赖主窗口。
+  invoke<string>('toggle_streaming')
+    .then((r) => ftrace(`toggle_streaming ok: ${r}`))
+    .catch((err) => {
+      console.error('toggle_streaming failed:', err);
+      ftrace(`toggle_streaming failed: ${String(err)}`);
+    });
 }
 
 /** Single click = tap RAlt+Space once. */
@@ -187,6 +192,9 @@ async function sendKeyOnce() {
 }
 
 async function handleContextMenu(e: MouseEvent) {
+  // 双保险：修饰符 + 显式调用，确保原生窗口菜单被压住。
+  e.preventDefault();
+  e.stopPropagation();
   ftrace('contextmenu fire');
   if (clickTimer) {
     clearTimeout(clickTimer);
@@ -222,7 +230,7 @@ async function menuShow() {
 
 async function menuToggleStream() {
   await closeMenu();
-  emit('tray-action', 'toggle_stream').catch((err) => console.error('toggle_stream failed:', err));
+  invoke<string>('toggle_streaming').catch((err) => console.error('toggle_streaming failed:', err));
 }
 
 async function menuSendKey() {

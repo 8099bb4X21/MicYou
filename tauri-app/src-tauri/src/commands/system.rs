@@ -1574,6 +1574,49 @@ pub fn import_winuhid_dll(path: String) -> Result<bool, String> {
     crate::remote_key::import_dll(&path)
 }
 
+/// 悬浮窗独立启停：不依赖主窗口，按 server.json 上次配置启停。
+/// 注意：USB 模式的 adb 端口转发仍由主窗口流程负责，此处只起服务。
+#[tauri::command]
+pub async fn toggle_streaming(
+    app_handle: AppHandle,
+    state: State<'_, ServerState>,
+) -> Result<String, String> {
+    let events: crate::events::SharedEvents =
+        std::sync::Arc::new(crate::events::TauriEventSink(app_handle.clone()));
+    let running = {
+        let lifecycle = state.lifecycle.lock().await;
+        matches!(
+            lifecycle.phase(),
+            crate::server::ServerLifecyclePhase::Running
+        )
+    };
+    if running {
+        stop_server_inner(&state, events).await
+    } else {
+        let prefs = crate::app_config::load_server_prefs();
+        let resource_dir = app_handle.path().resource_dir().ok();
+        let bind_address = if prefs.mode == "usb" || prefs.auto_bind {
+            None
+        } else {
+            Some(prefs.bind_address.clone())
+        };
+        let output_device = match prefs.output_device.as_str() {
+            "auto" | "default" | "" => None,
+            name => Some(name.to_string()),
+        };
+        start_server_inner(
+            &state,
+            prefs.port,
+            prefs.mode.clone(),
+            bind_address,
+            output_device,
+            resource_dir,
+            events,
+        )
+        .await
+    }
+}
+
 /// 悬浮窗/取证用：点一次右Alt+空格。无驱动返回 Err，前端据此弹缺驱动提示。
 #[tauri::command]
 pub fn send_remote_key_once() -> Result<(), String> {

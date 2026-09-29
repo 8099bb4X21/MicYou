@@ -142,7 +142,7 @@ pub fn run() {
                 log::warn!(target: "tray", "failed to build tray: {e}");
             }
             // 悬浮窗默认显示（远程按键分支需求）。
-            if let Err(e) = crate::commands::show_floating_window(app.handle()) {
+            if let Err(e) = crate::commands::ensure_floating_window(app.handle()) {
                 log::warn!(target: "tray", "failed to auto-show floating window: {e}");
             }
 
@@ -227,6 +227,7 @@ pub fn run() {
             commands::is_floating_window_visible,
             commands::move_floating_window_delta,
             commands::allow_firewall,
+            commands::toggle_streaming,
             commands::import_winuhid_dll,
             commands::send_remote_key_once,
             commands::log_floating,
