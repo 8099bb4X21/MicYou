@@ -213,6 +213,89 @@
                   </button>
                 </div>
 
+                <!-- Floating Window -->
+                <div
+                  class="bg-surface-bright/60 backdrop-blur-lg rounded-2xl p-4 shadow-sm border border-white/5"
+                >
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <h4 class="font-bold text-on-surface">{{ $t('settings.floating.title') }}</h4>
+                      <p class="text-xs text-on-surface-variant">
+                        {{ $t('settings.floating.desc') }}
+                      </p>
+                    </div>
+                    <button
+                      @click="floatingVisible = !floatingVisible; saveFloatingPrefs()"
+                      class="group relative inline-flex h-8 w-14 shrink-0 cursor-pointer items-center rounded-full border-2 transition-colors duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:scale-95"
+                      :class="
+                        floatingVisible
+                          ? 'border-primary bg-primary'
+                          : 'border-on-surface-variant bg-transparent hover:bg-on-surface-variant/10'
+                      "
+                    >
+                      <div
+                        class="relative flex items-center justify-center transition-transform duration-300 ease-out"
+                        :class="floatingVisible ? 'translate-x-[26px]' : 'translate-x-[4px]'"
+                      >
+                        <span
+                          class="pointer-events-none block rounded-full shadow-sm ring-0 transition-all duration-300 ease-out"
+                          :class="
+                            floatingVisible
+                              ? 'h-6 w-6 bg-on-primary'
+                              : 'h-4 w-4 bg-on-surface-variant group-hover:h-5 group-hover:w-5'
+                          "
+                        />
+                      </div>
+                    </button>
+                  </div>
+                  <div class="mt-3 grid grid-cols-2 gap-2">
+                    <div>
+                      <p class="mb-1 text-xs font-semibold text-on-surface-variant">
+                        {{ $t('settings.floating.clickLabel') }}
+                      </p>
+                      <Select v-model="floatingClick" @update:model-value="saveFloatingPrefs()">
+                        <SelectTrigger
+                          class="w-full bg-surface-container border-none shadow-none rounded-lg text-sm font-medium"
+                        >
+                          <SelectValue placeholder="Click" />
+                        </SelectTrigger>
+                        <SelectContent
+                          class="border-surface-variant/20 rounded-lg bg-surface shadow-lg"
+                        >
+                          <SelectGroup>
+                            <SelectItem value="send">{{ $t('settings.floating.actionSend') }}</SelectItem>
+                            <SelectItem value="toggle">{{ $t('settings.floating.actionToggle') }}</SelectItem>
+                            <SelectItem value="show">{{ $t('settings.floating.actionShow') }}</SelectItem>
+                            <SelectItem value="nothing">{{ $t('settings.floating.actionNothing') }}</SelectItem>
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <p class="mb-1 text-xs font-semibold text-on-surface-variant">
+                        {{ $t('settings.floating.dblclickLabel') }}
+                      </p>
+                      <Select v-model="floatingDblclick" @update:model-value="saveFloatingPrefs()">
+                        <SelectTrigger
+                          class="w-full bg-surface-container border-none shadow-none rounded-lg text-sm font-medium"
+                        >
+                          <SelectValue placeholder="Double-click" />
+                        </SelectTrigger>
+                        <SelectContent
+                          class="border-surface-variant/20 rounded-lg bg-surface shadow-lg"
+                        >
+                          <SelectGroup>
+                            <SelectItem value="toggle">{{ $t('settings.floating.actionToggle') }}</SelectItem>
+                            <SelectItem value="send">{{ $t('settings.floating.actionSend') }}</SelectItem>
+                            <SelectItem value="show">{{ $t('settings.floating.actionShow') }}</SelectItem>
+                            <SelectItem value="nothing">{{ $t('settings.floating.actionNothing') }}</SelectItem>
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Run at Startup -->
                 <div
                   class="bg-surface-bright/60 backdrop-blur-lg rounded-2xl p-4 flex items-center justify-between shadow-sm border border-white/5"
@@ -1635,6 +1718,7 @@ import { useI18n } from 'vue-i18n';
 import { useColorMode, useStorage } from '@vueuse/core';
 import { invoke } from '@tauri-apps/api/core';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
+import { emit as tauriEmit } from '@tauri-apps/api/event';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import {
   isEnabled as isAutostartEnabled,
@@ -1745,6 +1829,51 @@ const startMinimized = useStorage<boolean>('micyou_start_minimized', false);
 const notificationsEnabled = useStorage<boolean>('micyou_notifications', true);
 const autoStream = useStorage<boolean>('micyou_auto_stream', false);
 const autostartEnabled = ref(false);
+
+// Floating window prefs (backend ui.json).
+const floatingVisible = ref(true);
+const floatingClick = ref('send');
+const floatingDblclick = ref('toggle');
+let floatingLoaded = false;
+
+async function loadFloatingPrefs() {
+  try {
+    const p = await invoke<{
+      floatingVisible: boolean;
+      floatingClick: string;
+      floatingDblclick: string;
+    }>('get_floating_prefs');
+    floatingVisible.value = p.floatingVisible;
+    floatingClick.value = p.floatingClick || 'send';
+    floatingDblclick.value = p.floatingDblclick || 'toggle';
+    floatingLoaded = true;
+  } catch (e) {
+    console.error('get_floating_prefs failed:', e);
+  }
+}
+
+async function saveFloatingPrefs() {
+  if (!floatingLoaded) return;
+  try {
+    await invoke('set_floating_prefs', {
+      visible: floatingVisible.value,
+      click: floatingClick.value,
+      dblclick: floatingDblclick.value,
+    });
+    await tauriEmit('floating-prefs-changed', {
+      floatingVisible: floatingVisible.value,
+      floatingClick: floatingClick.value,
+      floatingDblclick: floatingDblclick.value,
+    });
+    if (!floatingVisible.value) {
+      try {
+        await invoke('hide_floating_window');
+      } catch {}
+    }
+  } catch (e) {
+    console.error('set_floating_prefs failed:', e);
+  }
+}
 
 const applyCustomColor = (color: { h: number; s: number; l: number }) => {
   customH.value = color.h;
@@ -2497,9 +2626,9 @@ onMounted(async () => {
   }
   try {
     autostartEnabled.value = await isAutostartEnabled();
-  } catch (e) {
-    console.error('Failed to read autostart state:', e);
+  } catch (e) {    console.error('Failed to read autostart state:', e);
   }
+  await loadFloatingPrefs();
   unlistenVbcableProgress = await listen<string>('vbcable-install-progress', (event) => {
     vbcableInstallProgress.value = event.payload;
   });

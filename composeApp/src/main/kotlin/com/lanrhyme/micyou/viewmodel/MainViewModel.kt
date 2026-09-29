@@ -110,6 +110,8 @@ data class AppUiState(
     val autoDisconnectHour: Int = 19,
     val autoDisconnectMinute: Int = 30,
     val allowRemoteWake: Boolean = true,
+    val volumeChordUp: List<Int> = emptyList(),
+    val volumeChordDown: List<Int> = emptyList(),
     val autoCheckUpdate: Boolean = true,
     val useMirrorDownload: Boolean = false,
     val mirrorCdk: String = "",
@@ -236,6 +238,8 @@ class MainViewModel : ViewModel() {
                         autoDisconnectHour = settingsState.autoDisconnectHour,
                         autoDisconnectMinute = settingsState.autoDisconnectMinute,
                         allowRemoteWake = settingsState.allowRemoteWake,
+                        volumeChordUp = settingsState.volumeChordUp,
+                        volumeChordDown = settingsState.volumeChordDown,
                         autoCheckUpdate = settingsState.autoCheckUpdate,
                         useMirrorDownload = settingsState.useMirrorDownload,
                         mirrorCdk = settingsState.mirrorCdk,
@@ -265,6 +269,8 @@ class MainViewModel : ViewModel() {
     fun toggleMute() = audioStreamViewModel.toggleMute()
     fun remoteKeyDown(keyId: Int) = audioStreamViewModel.remoteKeyDown(keyId)
     fun remoteKeyUp(keyId: Int) = audioStreamViewModel.remoteKeyUp(keyId)
+    fun remoteChordDown(vks: List<Int>) = audioStreamViewModel.remoteChordDown(vks)
+    fun remoteChordUp(vks: List<Int>) = audioStreamViewModel.remoteChordUp(vks)
     fun startStream() = audioStreamViewModel.startStream()
     fun stopStream() = audioStreamViewModel.stopStream()
     fun setMode(mode: ConnectionMode) = audioStreamViewModel.setMode(mode)
@@ -301,6 +307,8 @@ class MainViewModel : ViewModel() {
     fun setAutoDisconnectEnabled(enabled: Boolean) = settingsViewModel.setAutoDisconnectEnabled(enabled)
     fun setAutoDisconnectTime(hour: Int, minute: Int) = settingsViewModel.setAutoDisconnectTime(hour, minute)
     fun setAllowRemoteWake(enabled: Boolean) = settingsViewModel.setAllowRemoteWake(enabled)
+    fun setVolumeChordUp(vks: List<Int>) = settingsViewModel.setVolumeChordUp(vks)
+    fun setVolumeChordDown(vks: List<Int>) = settingsViewModel.setVolumeChordDown(vks)
     fun setVisualizerStyle(style: VisualizerStyle) = settingsViewModel.setVisualizerStyle(style)
     fun setAutoCheckUpdate(enabled: Boolean) = settingsViewModel.setAutoCheckUpdate(enabled)
     fun setUseMirrorDownload(enabled: Boolean) = settingsViewModel.setUseMirrorDownload(enabled)

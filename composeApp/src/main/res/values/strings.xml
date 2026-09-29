@@ -199,6 +199,16 @@
     <string name="autoDisconnectTimeLabel">Disconnect Time</string>
     <string name="allowRemoteWakeLabel">Auto Start on PC Wake</string>
     <string name="allowRemoteWakeDesc">When the PC sends a wake packet on LAN, start streaming automatically</string>
+    <string name="volumeChordUpLabel">Volume Up Chord</string>
+    <string name="volumeChordDownLabel">Volume Down Chord</string>
+    <string name="chordEmpty">None</string>
+    <string name="chordKeyLCtrl">LCtrl</string>
+    <string name="chordKeyRCtrl">RCtrl</string>
+    <string name="chordKeyLAlt">LAlt</string>
+    <string name="chordKeyRAlt">RAlt</string>
+    <string name="chordKeyLWin">LWin</string>
+    <string name="chordKeyRWin">RWin</string>
+    <string name="chordKeySpace">Space</string>
     <string name="languageLabel">Language</string>
     
     <string name="licensesTitle">Open Source Libraries and Licenses</string>

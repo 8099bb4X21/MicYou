@@ -40,8 +40,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lanrhyme.micyou.audio.AudioEngine
-import com.lanrhyme.micyou.network.REMOTE_KEY_ALT_SPACE
-import com.lanrhyme.micyou.network.REMOTE_KEY_ENTER
+import com.lanrhyme.micyou.network.DEFAULT_CHORD_DOWN
+import com.lanrhyme.micyou.network.DEFAULT_CHORD_UP
+import com.lanrhyme.micyou.network.chordToString
+import com.lanrhyme.micyou.network.parseChordString
+import com.lanrhyme.micyou.settings.SettingsFactory
 import com.lanrhyme.micyou.service.AudioService
 import com.lanrhyme.micyou.theme.isDarkThemeActive
 import com.lanrhyme.micyou.ui.dialog.getRequiredPermissions
@@ -113,8 +116,23 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun volumeKeyId(keyCode: Int): Int {
-        return if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) REMOTE_KEY_ALT_SPACE else REMOTE_KEY_ENTER
+    private fun volumeChord(keyCode: Int): List<Int> {
+        return try {
+            val prefs = SettingsFactory.getSettings()
+            val isUp = keyCode == KeyEvent.KEYCODE_VOLUME_UP
+            val raw = prefs.getString(
+                if (isUp) "volume_chord_up" else "volume_chord_down",
+                chordToString(if (isUp) DEFAULT_CHORD_UP else DEFAULT_CHORD_DOWN)
+            )
+            val parsed = parseChordString(raw)
+            if (parsed.isEmpty()) {
+                if (isUp) DEFAULT_CHORD_UP else DEFAULT_CHORD_DOWN
+            } else {
+                parsed
+            }
+        } catch (_: Exception) {
+            if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) DEFAULT_CHORD_UP else DEFAULT_CHORD_DOWN
+        }
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
@@ -124,7 +142,7 @@ class MainActivity : ComponentActivity() {
             if (event.repeatCount == 0) {
                 try {
                     ViewModelProvider(this)[MainViewModel::class.java]
-                        .remoteKeyDown(volumeKeyId(keyCode))
+                        .remoteChordDown(volumeChord(keyCode))
                 } catch (_: Exception) {
                 }
             }
@@ -142,7 +160,7 @@ class MainActivity : ComponentActivity() {
                 null
             }
             if (vm?.uiState?.value?.volumeKeysSendRemoteKey == true) {
-                vm.remoteKeyUp(volumeKeyId(keyCode))
+                vm.remoteChordUp(volumeChord(keyCode))
                 return true
             }
         }

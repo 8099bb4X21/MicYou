@@ -96,6 +96,16 @@
       "desc": "选择应用程序的显示语言",
       "system": "跟随系统"
     },
+    "floating": {
+      "title": "悬浮窗",
+      "desc": "置顶迷你控制台，右键出菜单",
+      "clickLabel": "单击",
+      "dblclickLabel": "双击",
+      "actionSend": "发送右Alt+空格",
+      "actionToggle": "开始/停止推流",
+      "actionShow": "显示主窗口",
+      "actionNothing": "无动作"
+    },
     "theme": {
       "title": "主题",
       "desc": "选择应用程序的外观主题",
@@ -400,7 +410,6 @@
     "exit": "退出",
     "switchCli": "切换到 CLI 模式",
     "switchTui": "切换到 TUI 模式",
-    "sendKey": "发送一次右Alt+空格",
     "floating": "悬浮窗"
   },
   "closeConfirm": {

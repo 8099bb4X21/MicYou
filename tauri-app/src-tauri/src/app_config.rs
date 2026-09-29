@@ -91,11 +91,32 @@ pub fn settings_json() -> serde_json::Value {
 }
 
 /// GUI UI preferences persisted to ui.json.
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase", default)]
 pub struct UiPrefs {
     pub language: String,
     pub theme_color: String,
+    /// 悬浮窗启动时是否显示。
+    #[serde(default = "default_true")]
+    pub floating_visible: bool,
+    /// 悬浮窗单击动作：send | show | toggle | nothing。
+    #[serde(default = "default_click_action")]
+    pub floating_click: String,
+    /// 悬浮窗双击动作：toggle | show | send | nothing。
+    #[serde(default = "default_dblclick_action")]
+    pub floating_dblclick: String,
+}
+
+impl Default for UiPrefs {
+    fn default() -> Self {
+        Self {
+            language: String::new(),
+            theme_color: String::new(),
+            floating_visible: true,
+            floating_click: default_click_action(),
+            floating_dblclick: default_dblclick_action(),
+        }
+    }
 }
 
 pub fn load_ui_prefs() -> UiPrefs {

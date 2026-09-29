@@ -589,9 +589,9 @@ private fun MobileCompactStatus(
     val isRunning = state.streamState == StreamState.Streaming
     val isConnecting = state.streamState == StreamState.Connecting
     Column(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         MobileStatusText(state = state)
         MobileMainButton(
@@ -629,51 +629,71 @@ private fun MobileBottomBar(
         hazeState = hazeState,
         enabled = state.backgroundSettings.enableHazeEffect
     ) {
-        Row(
+        Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                MobileMuteButton(
-                    isMuted = state.isMuted,
-                    onToggle = { viewModel.toggleMute() }
-                )
-                MobileRemoteKeyButton(
-                    label = stringResource(R.string.remoteKeyRalt),
-                    testTag = "home_key_ralt",
-                    enabled = state.streamState == StreamState.Streaming,
-                    onDown = { viewModel.remoteKeyDown(REMOTE_KEY_RALT) },
-                    onUp = { viewModel.remoteKeyUp(REMOTE_KEY_RALT) }
-                )
-                MobileRemoteKeyButton(
-                    label = stringResource(R.string.remoteKeyAltSpace),
-                    testTag = "home_key_altspace",
-                    enabled = state.streamState == StreamState.Streaming,
-                    onDown = { viewModel.remoteKeyDown(REMOTE_KEY_ALT_SPACE) },
-                    onUp = { viewModel.remoteKeyUp(REMOTE_KEY_ALT_SPACE) }
-                )
-                MobileRemoteKeyButton(
-                    label = stringResource(R.string.remoteKeyEnter),
-                    testTag = "home_key_enter",
-                    enabled = state.streamState == StreamState.Streaming,
-                    onDown = { viewModel.remoteKeyDown(REMOTE_KEY_ENTER) },
-                    onUp = { viewModel.remoteKeyUp(REMOTE_KEY_ENTER) }
-                )
+            val streaming = state.streamState == StreamState.Streaming
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(modifier = Modifier.weight(1f)) {
+                    MobileMuteButton(
+                        isMuted = state.isMuted,
+                        onToggle = { viewModel.toggleMute() }
+                    )
+                }
+                Box(modifier = Modifier.weight(1f)) {
+                    MobileRemoteKeyButton(
+                        label = stringResource(R.string.remoteKeyRalt),
+                        testTag = "home_key_ralt",
+                        enabled = streaming,
+                        onDown = { viewModel.remoteKeyDown(REMOTE_KEY_RALT) },
+                        onUp = { viewModel.remoteKeyUp(REMOTE_KEY_RALT) }
+                    )
+                }
             }
-            
-            val dotColor = when (state.streamState) {
-                StreamState.Idle -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-                StreamState.Connecting -> MaterialTheme.colorScheme.tertiary
-                StreamState.Streaming -> MaterialTheme.colorScheme.primary
-                StreamState.Error -> MaterialTheme.colorScheme.error
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(modifier = Modifier.weight(1f)) {
+                    MobileRemoteKeyButton(
+                        label = stringResource(R.string.remoteKeyAltSpace),
+                        testTag = "home_key_altspace",
+                        enabled = streaming,
+                        onDown = { viewModel.remoteKeyDown(REMOTE_KEY_ALT_SPACE) },
+                        onUp = { viewModel.remoteKeyUp(REMOTE_KEY_ALT_SPACE) }
+                    )
+                }
+                Box(modifier = Modifier.weight(1f)) {
+                    MobileRemoteKeyButton(
+                        label = stringResource(R.string.remoteKeyEnter),
+                        testTag = "home_key_enter",
+                        enabled = streaming,
+                        onDown = { viewModel.remoteKeyDown(REMOTE_KEY_ENTER) },
+                        onUp = { viewModel.remoteKeyUp(REMOTE_KEY_ENTER) }
+                    )
+                }
             }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                val dotColor = when (state.streamState) {
+                    StreamState.Idle -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                    StreamState.Connecting -> MaterialTheme.colorScheme.tertiary
+                    StreamState.Streaming -> MaterialTheme.colorScheme.primary
+                    StreamState.Error -> MaterialTheme.colorScheme.error
+                }
 
-            Surface(
-                shape = CircleShape,
-                color = dotColor,
-                modifier = Modifier.size(8.dp)
-            ) {}
+                Surface(
+                    shape = CircleShape,
+                    color = dotColor,
+                    modifier = Modifier.size(8.dp)
+                ) {}
+            }
         }
     }
 }
@@ -700,7 +720,7 @@ private fun MobileRemoteKeyButton(
     Surface(
         shape = MaterialTheme.shapes.small,
         color = bgColor,
-        modifier = Modifier.testTag(testTag)
+        modifier = Modifier.fillMaxWidth().testTag(testTag)
             .semantics { contentDescription = testTag }.pointerInput(enabled) {
             if (!enabled) return@pointerInput
             detectTapGestures(
@@ -716,7 +736,7 @@ private fun MobileRemoteKeyButton(
         }
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
@@ -754,11 +774,11 @@ private fun MobileMuteButton(
     Surface(
         shape = MaterialTheme.shapes.small,
         color = bgColor,
-        modifier = Modifier.scale(scale).testTag("home_mute")
+        modifier = Modifier.fillMaxWidth().scale(scale).testTag("home_mute")
             .semantics { contentDescription = "home_mute" }.clickable(interactionSource, null) { onToggle() }
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {

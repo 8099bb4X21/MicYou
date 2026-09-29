@@ -310,6 +310,19 @@ class AudioStreamViewModel : ViewModel() {
         }
     }
 
+    /** 自定义和弦按下/松开（音量键配置，VK 直传）。 */
+    fun remoteChordDown(vks: List<Int>) {
+        auxiliaryScope.launch {
+            _audioEngine.sendRemoteChord(vks, true)
+        }
+    }
+
+    fun remoteChordUp(vks: List<Int>) {
+        auxiliaryScope.launch {
+            _audioEngine.sendRemoteChord(vks, false)
+        }
+    }
+
     fun startStream() {
         if (isStartStreamRequestPending ||
             isStopStreamRequestPending ||

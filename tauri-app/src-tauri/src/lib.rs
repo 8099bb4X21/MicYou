@@ -142,9 +142,11 @@ pub fn run() {
             if let Err(e) = crate::tray::build_tray(app.handle()) {
                 log::warn!(target: "tray", "failed to build tray: {e}");
             }
-            // 悬浮窗默认显示（远程按键分支需求）。
-            if let Err(e) = crate::commands::ensure_floating_window(app.handle()) {
-                log::warn!(target: "tray", "failed to auto-show floating window: {e}");
+            // 悬浮窗默认显示（可在设置关闭）。
+            if crate::app_config::load_ui_prefs().floating_visible {
+                if let Err(e) = crate::commands::ensure_floating_window(app.handle()) {
+                    log::warn!(target: "tray", "failed to auto-show floating window: {e}");
+                }
             }
             // 双向唤醒常驻监听（服务停了也留着）。
             tauri::async_runtime::spawn(crate::wake::run_wake_listener(app.handle().clone()));
@@ -252,6 +254,8 @@ pub fn run() {
             commands::mode::switch_to_cli,
             commands::mode::switch_to_tui,
             commands::mode::save_ui_prefs,
+            commands::mode::get_floating_prefs,
+            commands::mode::set_floating_prefs,
             commands::mode::save_theme_colors,
             commands::mode::get_theme_colors,
             commands::get_audio_settings,

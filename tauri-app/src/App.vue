@@ -17,6 +17,7 @@ import { useServer } from './features/connection/composables/useServer';
 import { useAudio } from './features/audio/composables/useAudio';
 import { useTheme } from './features/theme/composables/useTheme';
 import { useWindow } from './shared/composables/useWindow';
+import { useWindowPos } from './shared/composables/useWindowPos';
 import { useTray } from './shared/composables/useTray';
 
 // UI components for connection flows, onboarding, and layouts
@@ -53,6 +54,8 @@ const audio = useAudio();
 const server = useServer({ audioLevel: audio.audioLevel, isMuted: audio.isMuted });
 useTheme();
 const win = useWindow();
+// 主窗口位置记忆（localStorage + 显示器钳制）
+useWindowPos('micyou_main_pos');
 
 /**
  * Handles custom window dragging. Uses custom Win32 loop on Windows, falls back to Tauri API on other OSs.

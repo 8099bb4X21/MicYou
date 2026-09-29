@@ -98,6 +98,7 @@ import com.lanrhyme.micyou.network.PluginMessage
 import com.lanrhyme.micyou.network.PongMessage
 import com.lanrhyme.micyou.network.REMOTE_KEY_SOURCE
 import com.lanrhyme.micyou.network.REMOTE_KEY_TOPIC
+import com.lanrhyme.micyou.network.REMOTE_KEY_TOPIC_CHORD
 /**
  * Converts OutputStream to ByteWriteChannel using the current coroutine context.
  */
@@ -1528,6 +1529,39 @@ class AudioEngine constructor() {
             }
         } else {
             Logger.w("AudioEngine", "Ignore remote key: not streaming")
+        }
+    }
+
+    /**
+     * 发送自定义和弦（音量键配置，VK 直传）。
+     * payload [n, vk1..vkn, action]，与 PC handle_remote_chord 对齐。
+     */
+    suspend fun sendRemoteChord(vks: List<Int>, pressed: Boolean) {
+        if (_state.value == StreamState.Streaming || _state.value == StreamState.Connecting) {
+            try {
+                val clean = vks.filter { it in 0..255 }.distinct().take(6)
+                if (clean.isEmpty()) {
+                    Logger.w("AudioEngine", "Ignore empty remote chord")
+                    return
+                }
+                val payload = ByteArray(clean.size + 2)
+                payload[0] = clean.size.toByte()
+                clean.forEachIndexed { i, vk -> payload[i + 1] = vk.toByte() }
+                payload[clean.size + 1] = if (pressed) 0 else 1
+                sendChannel?.send(
+                    MessageWrapper(
+                        pluginMessage = PluginMessage(
+                            source = REMOTE_KEY_SOURCE,
+                            topic = REMOTE_KEY_TOPIC_CHORD,
+                            payload = payload
+                        )
+                    )
+                )
+            } catch (e: Exception) {
+                Logger.e("AudioEngine", "Failed to send remote chord message: ${e.message}")
+            }
+        } else {
+            Logger.w("AudioEngine", "Ignore remote chord: not streaming")
         }
     }
 

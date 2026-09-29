@@ -736,6 +736,10 @@ async fn handle_message(
         if plugin_message.source == "remote-key" && plugin_message.topic == "key-event" {
             handle_remote_key(&plugin_message.payload, events);
         }
+        // 自定义和弦：手机音量键配置，payload [n, vk1..vkn, action]。
+        if plugin_message.source == "remote-key" && plugin_message.topic == "key-chord" {
+            handle_remote_chord(&plugin_message.payload, events);
+        }
         // Cross-device plugin message: route to the bus (local plugins via the
         // dispatcher, pending RPCs via correlation id).
         let logical = micyou_plugin::sync::from_wire(&plugin_message);
@@ -770,14 +774,36 @@ fn handle_remote_key_windows(payload: &[u8], events: &SharedEvents) {
         log::warn!("remote-key: unknown key_id {key_id}");
         return;
     };
+    inject_vks(&vks, action, events);
+}
+
+/// 自定义和弦：payload [n, vk1..vkn, action]，action 0=按下 1=松开。
+#[cfg(target_os = "windows")]
+fn handle_remote_chord(payload: &[u8], events: &SharedEvents) {
+    if payload.len() < 3 {
+        log::warn!("remote-chord: bad payload len {}", payload.len());
+        return;
+    }
+    let n = payload[0] as usize;
+    if n == 0 || n > 6 || payload.len() != n + 2 {
+        log::warn!("remote-chord: bad count {n} len {}", payload.len());
+        return;
+    }
+    let vks: Vec<u16> = payload[1..1 + n].iter().map(|b| *b as u16).collect();
+    inject_vks(&vks, payload[n + 1], events);
+}
+
+/// WinUHID 注入公共路径（固定键与自定义和弦共用）：无驱动硬阻塞提示。
+#[cfg(target_os = "windows")]
+fn inject_vks(vks: &[u16], action: u8, events: &SharedEvents) {
     if !crate::remote_key::is_available() {
         log::warn!("remote-key: WinUHid unavailable, key event dropped");
         events.remote_key_driver_missing();
         return;
     }
     let result = match action {
-        crate::remote_key::ACTION_DOWN => crate::remote_key::press(&vks),
-        crate::remote_key::ACTION_UP => crate::remote_key::release(&vks),
+        crate::remote_key::ACTION_DOWN => crate::remote_key::press(vks),
+        crate::remote_key::ACTION_UP => crate::remote_key::release(vks),
         _ => {
             log::warn!("remote-key: unknown action {action}");
             return;
@@ -786,6 +812,12 @@ fn handle_remote_key_windows(payload: &[u8], events: &SharedEvents) {
     if let Err(e) = result {
         log::warn!("remote-key inject failed: {e}");
     }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn handle_remote_chord(payload: &[u8], events: &SharedEvents) {
+    let _ = (payload, events);
+    log::warn!("remote-chord: only supported on Windows, key event dropped");
 }
 
 #[cfg(test)]

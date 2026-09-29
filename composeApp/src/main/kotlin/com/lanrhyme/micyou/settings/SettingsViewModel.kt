@@ -17,6 +17,11 @@ package com.lanrhyme.micyou.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lanrhyme.micyou.network.CHORD_KEY_OPTIONS
+import com.lanrhyme.micyou.network.DEFAULT_CHORD_DOWN
+import com.lanrhyme.micyou.network.DEFAULT_CHORD_UP
+import com.lanrhyme.micyou.network.chordToString
+import com.lanrhyme.micyou.network.parseChordString
 import com.lanrhyme.micyou.theme.PaletteStyle
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -50,6 +55,8 @@ data class SettingsUiState(
     val autoDisconnectHour: Int = 19,
     val autoDisconnectMinute: Int = 30,
     val allowRemoteWake: Boolean = true,
+    val volumeChordUp: List<Int> = DEFAULT_CHORD_UP,
+    val volumeChordDown: List<Int> = DEFAULT_CHORD_DOWN,
     val autoCheckUpdate: Boolean = true,
     val useMirrorDownload: Boolean = false,
     val mirrorCdk: String = "",
@@ -91,6 +98,8 @@ class SettingsViewModel : ViewModel() {
     val savedAutoDisconnectHour = settings.getInt("auto_disconnect_hour", 19)
     val savedAutoDisconnectMinute = settings.getInt("auto_disconnect_minute", 30)
     val savedAllowRemoteWake = settings.getBoolean("allow_remote_wake", true)
+    val savedVolumeChordUp = parseChordString(settings.getString("volume_chord_up", null)).ifEmpty { DEFAULT_CHORD_UP }
+    val savedVolumeChordDown = parseChordString(settings.getString("volume_chord_down", null)).ifEmpty { DEFAULT_CHORD_DOWN }
     val savedVisualizerStyleName = settings.getString("visualizer_style", VisualizerStyle.VolumeRing.name)
     val savedVisualizerStyle = try {
             VisualizerStyle.valueOf(savedVisualizerStyleName)
@@ -127,6 +136,8 @@ class SettingsViewModel : ViewModel() {
                 autoDisconnectHour = savedAutoDisconnectHour,
                 autoDisconnectMinute = savedAutoDisconnectMinute,
                 allowRemoteWake = savedAllowRemoteWake,
+                volumeChordUp = savedVolumeChordUp,
+                volumeChordDown = savedVolumeChordDown,
                 visualizerStyle = savedVisualizerStyle,
                 backgroundSettings = BackgroundSettings(
                     imagePath = savedBackgroundImagePath,
@@ -210,6 +221,18 @@ class SettingsViewModel : ViewModel() {
     fun setAllowRemoteWake(enabled: Boolean) {
         _uiState.update { it.copy(allowRemoteWake = enabled) }
         settings.putBoolean("allow_remote_wake", enabled)
+    }
+
+    fun setVolumeChordUp(vks: List<Int>) {
+        val clean = vks.filter { it in CHORD_KEY_OPTIONS }.distinct()
+        _uiState.update { it.copy(volumeChordUp = clean) }
+        settings.putString("volume_chord_up", chordToString(clean))
+    }
+
+    fun setVolumeChordDown(vks: List<Int>) {
+        val clean = vks.filter { it in CHORD_KEY_OPTIONS }.distinct()
+        _uiState.update { it.copy(volumeChordDown = clean) }
+        settings.putString("volume_chord_down", chordToString(clean))
     }
 
     fun setVisualizerStyle(style: VisualizerStyle) {

@@ -177,6 +177,42 @@ const val REMOTE_KEY_RALT = 1
 const val REMOTE_KEY_ALT_SPACE = 2
 const val REMOTE_KEY_ENTER = 3
 
+/** 和弦消息 topic：payload=[n, vk1..vkn, action]，action 0=按下 1=松开。 */
+const val REMOTE_KEY_TOPIC_CHORD = "key-chord"
+
+/** 和弦可选 VK：左右 Ctrl/Alt/Win + 空格/回车。 */
+const val VK_LCTRL = 0xA2
+const val VK_RCTRL = 0xA3
+const val VK_LALT = 0xA4
+const val VK_RALT = 0xA5
+const val VK_LWIN = 0x5B
+const val VK_RWIN = 0x5C
+const val VK_SPACE = 0x20
+const val VK_ENTER = 0x0D
+
+/** 和弦候选（固定顺序，用于设置页多选）。 */
+val CHORD_KEY_OPTIONS = listOf(
+    VK_LCTRL, VK_RCTRL, VK_LALT, VK_RALT,
+    VK_LWIN, VK_RWIN, VK_SPACE, VK_ENTER
+)
+
+/** 默认和弦：音量上=右Alt+空格，音量下=回车。 */
+val DEFAULT_CHORD_UP = listOf(VK_RALT, VK_SPACE)
+val DEFAULT_CHORD_DOWN = listOf(VK_ENTER)
+
+/** 和弦存取：逗号分隔十进制，"165,32"。非法段丢弃，空表返回空。 */
+fun parseChordString(raw: String?): List<Int> {
+    if (raw.isNullOrBlank()) return emptyList()
+    return raw.split(",")
+        .mapNotNull { it.trim().toIntOrNull() }
+        .filter { it in CHORD_KEY_OPTIONS }
+        .distinct()
+}
+
+fun chordToString(vks: List<Int>): String {
+    return vks.filter { it in CHORD_KEY_OPTIONS }.distinct().joinToString(",")
+}
+
 /** 远程按键 action：0=按下，1=松开 */
 const val REMOTE_KEY_DOWN = 0
 const val REMOTE_KEY_UP = 1

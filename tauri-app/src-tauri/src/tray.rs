@@ -34,9 +34,6 @@ pub struct TrayMenuStrings {
     pub switch_cli: String,
     #[serde(default)]
     pub switch_tui: String,
-    /// 托盘发送一次右Alt+空格（远程按键分支新增）。
-    #[serde(default)]
-    pub send_key: String,
     /// 悬浮窗显隐切换。
     #[serde(default)]
     pub floating: String,
@@ -53,7 +50,6 @@ impl TrayMenuStrings {
             exit: "Exit".to_string(),
             switch_cli: "Switch to CLI Mode".to_string(),
             switch_tui: "Switch to TUI Mode".to_string(),
-            send_key: "Send RAlt+Space once".to_string(),
             floating: "Floating Window".to_string(),
         }
     }
@@ -90,7 +86,6 @@ pub const MENU_ID_TOGGLE_STREAM: &str = "toggle_stream";
 pub const MENU_ID_EXIT: &str = "exit";
 pub const MENU_ID_SWITCH_CLI: &str = "switch_cli";
 pub const MENU_ID_SWITCH_TUI: &str = "switch_tui";
-pub const MENU_ID_SEND_KEY: &str = "send_key";
 pub const MENU_ID_FLOATING: &str = "floating";
 
 pub struct TrayContext {
@@ -140,23 +135,6 @@ pub fn build_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
                 MENU_ID_FLOATING => {
                     if let Err(e) = crate::commands::toggle_floating_window_for(app) {
                         log::warn!(target: "tray", "toggle floating window failed: {e}");
-                    }
-                }
-                MENU_ID_SEND_KEY => {
-                    // 托盘点一次 = 右Alt+空格点一下（DOWN→80ms→UP），无驱动走缺驱动弹窗。
-                    #[cfg(target_os = "windows")]
-                    {
-                        let app = app.clone();
-                        std::thread::spawn(move || {
-                            if let Err(e) = crate::remote_key::tap(crate::remote_key::KEY_ALT_SPACE) {
-                                log::warn!(target: "tray", "remote-key tap failed: {e}");
-                                let _ = app.emit("remote-key-driver-missing", ());
-                            }
-                        });
-                    }
-                    #[cfg(not(target_os = "windows"))]
-                    {
-                        log::warn!(target: "tray", "remote-key: only supported on Windows");
                     }
                 }
                 other => {
@@ -229,13 +207,6 @@ fn build_menu<R: Runtime>(
         true,
         None::<&str>,
     )?;
-    let send_key = MenuItem::with_id(
-        app,
-        MENU_ID_SEND_KEY,
-        &strings.send_key,
-        true,
-        None::<&str>,
-    )?;
     let floating = MenuItem::with_id(
         app,
         MENU_ID_FLOATING,
@@ -250,7 +221,6 @@ fn build_menu<R: Runtime>(
         &[
             &show_hide,
             &toggle_stream,
-            &send_key,
             &floating,
             &separator,
             &switch_cli,
@@ -275,7 +245,6 @@ mod tests {
             exit: "Exit".into(),
             switch_cli: "Switch".into(),
             switch_tui: "Switch TUI".into(),
-            send_key: "Send key".into(),
             floating: "Floating".into(),
         }
     }

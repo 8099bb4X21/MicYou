@@ -21,6 +21,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -74,6 +76,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.lanrhyme.micyou.network.CHORD_KEY_OPTIONS
+import com.lanrhyme.micyou.network.VK_ENTER
+import com.lanrhyme.micyou.network.VK_LALT
+import com.lanrhyme.micyou.network.VK_LCTRL
+import com.lanrhyme.micyou.network.VK_LWIN
+import com.lanrhyme.micyou.network.VK_RALT
+import com.lanrhyme.micyou.network.VK_RCTRL
+import com.lanrhyme.micyou.network.VK_RWIN
+import com.lanrhyme.micyou.network.VK_SPACE
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -268,13 +279,107 @@ private fun SectionHeader(title: String) {
     }
 }
 
+@Composable
+private fun chordVkName(vk: Int): String {
+    return when (vk) {
+        VK_LCTRL -> stringResource(R.string.chordKeyLCtrl)
+        VK_RCTRL -> stringResource(R.string.chordKeyRCtrl)
+        VK_LALT -> stringResource(R.string.chordKeyLAlt)
+        VK_RALT -> stringResource(R.string.chordKeyRAlt)
+        VK_LWIN -> stringResource(R.string.chordKeyLWin)
+        VK_RWIN -> stringResource(R.string.chordKeyRWin)
+        VK_SPACE -> stringResource(R.string.chordKeySpace)
+        VK_ENTER -> stringResource(R.string.remoteKeyEnter)
+        else -> "0x" + vk.toString(16).uppercase()
+    }
+}
+
+@Composable
+private fun chordSummary(vks: List<Int>): String {
+    if (vks.isEmpty()) return stringResource(R.string.chordEmpty)
+    return vks.joinToString("+") { chordVkName(it) }
+}
+
+/** 音量和弦配置行：显示当前组合，点击弹多选框。 */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun VolumeChordRow(
+    title: String,
+    current: List<Int>,
+    onSave: (List<Int>) -> Unit
+) {
+    var showDialog by remember { mutableStateOf(false) }
+    var draft by remember { mutableStateOf<List<Int>>(emptyList()) }
+    Surface(
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceBright,
+        modifier = Modifier.fillMaxWidth().clickable {
+            draft = current.toList()
+            showDialog = true
+        }
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                title,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                chordSummary(current),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text(title) },
+            text = {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    CHORD_KEY_OPTIONS.forEach { vk ->
+                        FilterChip(
+                            selected = draft.contains(vk),
+                            onClick = {
+                                draft = if (draft.contains(vk)) draft - vk else draft + vk
+                            },
+                            label = { Text(chordVkName(vk)) }
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (draft.isNotEmpty()) {
+                        onSave(draft.toList())
+                    }
+                    showDialog = false
+                }) {
+                    Text(stringResource(R.string.confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+}
+
 private fun LazyListScope.generalSettingsItems(
     state: AppUiState,
     viewModel: MainViewModel,
     containerColor: Color,
     enableHaze: Boolean,
-    hazeState: HazeState? ) {
-    item {
+    hazeState: HazeState? ) {    item {
         val items = mutableListOf<@Composable (isFirst: Boolean, isLast: Boolean) -> Unit>()
 
         items.add { isFirst, isLast ->
@@ -346,6 +451,22 @@ private fun LazyListScope.generalSettingsItems(
                 containerColor = containerColor,
                 hazeState = hazeState,
                 enableHaze = enableHaze
+            )
+        }
+
+        items.add { _, _ ->
+            VolumeChordRow(
+                title = stringResource(R.string.volumeChordUpLabel),
+                current = state.volumeChordUp,
+                onSave = { viewModel.setVolumeChordUp(it) }
+            )
+        }
+
+        items.add { _, _ ->
+            VolumeChordRow(
+                title = stringResource(R.string.volumeChordDownLabel),
+                current = state.volumeChordDown,
+                onSave = { viewModel.setVolumeChordDown(it) }
             )
         }
 

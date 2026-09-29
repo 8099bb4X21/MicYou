@@ -385,10 +385,33 @@ pub async fn switch_to_tui(app: AppHandle, state: State<'_, ServerState>) -> Res
 /// the TUI can pick the same language and theme.
 #[tauri::command]
 pub fn save_ui_prefs(language: String, theme_color: String) -> Result<(), String> {
-    crate::app_config::save_ui_prefs(&crate::app_config::UiPrefs {
-        language,
-        theme_color,
-    })
+    // 合并保存：保留悬浮窗等其他字段，不整体覆盖。
+    let mut prefs = crate::app_config::load_ui_prefs();
+    prefs.language = language;
+    prefs.theme_color = theme_color;
+    crate::app_config::save_ui_prefs(&prefs)
+}
+
+/// 悬浮窗设置读取（设置页 + 悬浮窗启动）。
+#[tauri::command]
+pub fn get_floating_prefs() -> crate::app_config::UiPrefs {
+    crate::app_config::load_ui_prefs()
+}
+
+/// 悬浮窗设置保存（action 取值 send | show | toggle | nothing，非法回退默认）。
+#[tauri::command]
+pub fn set_floating_prefs(visible: bool, click: String, dblclick: String) -> Result<(), String> {
+    fn norm(v: &str, fallback: &str) -> String {
+        match v {
+            "send" | "show" | "toggle" | "nothing" => v.to_string(),
+            _ => fallback.to_string(),
+        }
+    }
+    let mut prefs = crate::app_config::load_ui_prefs();
+    prefs.floating_visible = visible;
+    prefs.floating_click = norm(&click, "send");
+    prefs.floating_dblclick = norm(&dblclick, "toggle");
+    crate::app_config::save_ui_prefs(&prefs)
 }
 
 /// Export the current GUI theme colors to theme.json for the TUI.

@@ -165,6 +165,16 @@
     <string name="autoDisconnectTimeLabel">断开时间</string>
     <string name="allowRemoteWakeLabel">被电脑唤醒自动推流</string>
     <string name="allowRemoteWakeDesc">电脑在局域网发唤醒包时自动开始推流</string>
+    <string name="volumeChordUpLabel">音量上组合键</string>
+    <string name="volumeChordDownLabel">音量下组合键</string>
+    <string name="chordEmpty">未设置</string>
+    <string name="chordKeyLCtrl">左Ctrl</string>
+    <string name="chordKeyRCtrl">右Ctrl</string>
+    <string name="chordKeyLAlt">左Alt</string>
+    <string name="chordKeyRAlt">右Alt</string>
+    <string name="chordKeyLWin">左Win</string>
+    <string name="chordKeyRWin">右Win</string>
+    <string name="chordKeySpace">空格</string>
     <string name="languageLabel">语言</string>
     
     <string name="licensesTitle">开源库和许可证</string>

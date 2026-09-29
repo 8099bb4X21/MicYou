@@ -96,6 +96,16 @@
       "desc": "Choose application language",
       "system": "System"
     },
+    "floating": {
+      "title": "Floating Window",
+      "desc": "Mini controller always on top; right-click for menu",
+      "clickLabel": "Single-click",
+      "dblclickLabel": "Double-click",
+      "actionSend": "Send RAlt+Space",
+      "actionToggle": "Start/Stop streaming",
+      "actionShow": "Show main window",
+      "actionNothing": "Do nothing"
+    },
     "theme": {
       "title": "Theme",
       "desc": "Choose application theme",
@@ -400,7 +410,6 @@
     "exit": "Exit",
     "switchCli": "Switch to CLI Mode",
     "switchTui": "Switch to TUI Mode",
-    "sendKey": "Send RAlt+Space once",
     "floating": "Floating Window"
   },
   "closeConfirm": {

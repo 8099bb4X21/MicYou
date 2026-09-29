@@ -59,9 +59,13 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { PhysicalPosition, LogicalSize } from '@tauri-apps/api/dpi';
 import { useI18n } from 'vue-i18n';
 import { useTheme } from '@/features/theme/composables/useTheme';
+import { useWindowPos } from '@/shared/composables/useWindowPos';
 
 // Activate theme synchronization for the floating window webview
 useTheme();
+
+// 悬浮窗位置记忆（localStorage + 显示器钳制）
+useWindowPos('micyou_floating_pos');
 
 const { t } = useI18n();
 const appWindow = getCurrentWebviewWindow();
@@ -75,6 +79,27 @@ function ftrace(msg: string) {
 const isMuted = ref(false);
 const isStreaming = ref(false);
 
+// 悬浮窗动作配置（设置页下发，默认单击发送、双击启停）。
+const clickAction = ref('send');
+const dblclickAction = ref('toggle');
+
+interface FloatingPrefs {
+  floatingVisible: boolean;
+  floatingClick: string;
+  floatingDblclick: string;
+}
+
+async function loadFloatingPrefs() {
+  try {
+    const p = await invoke<FloatingPrefs>('get_floating_prefs');
+    clickAction.value = p.floatingClick || 'send';
+    dblclickAction.value = p.floatingDblclick || 'toggle';
+    ftrace(`floating prefs: click=${clickAction.value} dbl=${dblclickAction.value}`);
+  } catch (e) {
+    console.error('get_floating_prefs failed:', e);
+  }
+}
+
 // Right-click menu state
 const menuOpen = ref(false);
 const menuX = ref(0);
@@ -84,6 +109,7 @@ const menuY = ref(0);
 let clickTimer: ReturnType<typeof setTimeout> | null = null;
 
 let unlistenMute: UnlistenFn | null = null;
+let unlistenFloatingPrefs: UnlistenFn | null = null;
 let unlistenDeviceConnected: UnlistenFn | null = null;
 let unlistenDeviceDisconnected: UnlistenFn | null = null;
 let unlistenServerStopped: UnlistenFn | null = null;
@@ -179,7 +205,7 @@ function handlePointerUp(e: PointerEvent) {
     clickTimer = setTimeout(() => {
       clickTimer = null;
       ftrace('single-click fire');
-      void sendKeyOnce();
+      void doClickAction();
     }, 250);
   } else {
     ftrace('drag end');
@@ -187,14 +213,19 @@ function handlePointerUp(e: PointerEvent) {
   hasDragged = false;
 }
 
-function handleDoubleClick() {
-  ftrace('double-click fire');
-  if (clickTimer) {
-    clearTimeout(clickTimer);
-    clickTimer = null;
+async function doClickAction() {
+  if (clickAction.value === 'show') {
+    invoke('show_main_window').catch((err) => console.error('show_main_window failed:', err));
+  } else if (clickAction.value === 'toggle') {
+    doToggleStream();
+  } else if (clickAction.value === 'nothing') {
+    ftrace('click action: nothing');
+  } else {
+    await sendKeyOnce();
   }
-  closeMenu();
-  // 独立启停，不依赖主窗口。
+}
+
+function doToggleStream() {
   invoke<string>('toggle_streaming')
     .then((r) => {
       ftrace(`toggle_streaming ok: ${r}`);
@@ -204,6 +235,24 @@ function handleDoubleClick() {
       console.error('toggle_streaming failed:', err);
       ftrace(`toggle_streaming failed: ${String(err)}`);
     });
+}
+
+function handleDoubleClick() {
+  ftrace('double-click fire');
+  if (clickTimer) {
+    clearTimeout(clickTimer);
+    clickTimer = null;
+  }
+  closeMenu();
+  if (dblclickAction.value === 'show') {
+    invoke('show_main_window').catch((err) => console.error('show_main_window failed:', err));
+  } else if (dblclickAction.value === 'send') {
+    void sendKeyOnce();
+  } else if (dblclickAction.value === 'nothing') {
+    ftrace('dblclick action: nothing');
+  } else {
+    doToggleStream();
+  }
 }
 
 /** Single click = tap RAlt+Space once. */
@@ -327,6 +376,14 @@ onMounted(async () => {
     isMuted.value = event.payload;
   });
 
+  unlistenFloatingPrefs = await listen<FloatingPrefs>('floating-prefs-changed', (event) => {
+    clickAction.value = event.payload.floatingClick || 'send';
+    dblclickAction.value = event.payload.floatingDblclick || 'toggle';
+    ftrace(`floating prefs live: click=${clickAction.value} dbl=${dblclickAction.value}`);
+  });
+
+  await loadFloatingPrefs();
+
   unlistenDeviceConnected = await listen('device-connected', () => {
     isStreaming.value = true;
   });
@@ -361,6 +418,7 @@ onUnmounted(() => {
   if (clickTimer) clearTimeout(clickTimer);
   window.removeEventListener('keydown', handleKeyDown);
   if (unlistenMute) unlistenMute();
+  if (unlistenFloatingPrefs) unlistenFloatingPrefs();
   if (unlistenDeviceConnected) unlistenDeviceConnected();
   if (unlistenDeviceDisconnected) unlistenDeviceDisconnected();
   if (unlistenServerStopped) unlistenServerStopped();
