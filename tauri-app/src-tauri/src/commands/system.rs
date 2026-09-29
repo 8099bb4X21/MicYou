@@ -1475,7 +1475,8 @@ fn show_floating_window_built<R: Runtime>(app: &AppHandle<R>) -> Result<(), Stri
     #[cfg(target_os = "windows")]
     if let Ok(hwnd) = _win.hwnd() {
         // 标题定位可能竞态（窗口刚建），有句柄直接再断言一次样式。
-        apply_noactivate_hwnd(hwnd);
+        // hwnd.0 取裸指针，不经过 windows 类型，避免与 tauri 自带版本冲突。
+        apply_noactivate_raw(hwnd.0 as isize);
     }
     Ok(())
 }
@@ -1485,9 +1486,7 @@ fn show_floating_window_built<R: Runtime>(app: &AppHandle<R>) -> Result<(), Stri
 #[cfg(target_os = "windows")]
 fn apply_noactivate() {
     use windows::core::PCWSTR;
-    use windows::Win32::UI::WindowsAndMessaging::{
-        FindWindowW, GetWindowLongPtrW, SetWindowLongPtrW, GWL_EXSTYLE, WS_EX_NOACTIVATE,
-    };
+    use windows::Win32::UI::WindowsAndMessaging::FindWindowW;
     let title: Vec<u16> = "MicYouFloating\0".encode_utf16().collect();
     // windows 0.58 起 FindWindowW 返回 Result。
     let hwnd = match unsafe { FindWindowW(None, PCWSTR(title.as_ptr())) } {
@@ -1497,26 +1496,32 @@ fn apply_noactivate() {
             return;
         }
     };
-    apply_noactivate_hwnd(hwnd);
-}
-
-/// 给定句柄直接补 WS_EX_NOACTIVATE（创建/显示路径用 hwnd，比标题定位可靠）。
-#[cfg(target_os = "windows")]
-fn apply_noactivate_hwnd(hwnd: windows::Win32::Foundation::HWND) {
-    use windows::Win32::UI::WindowsAndMessaging::{
-        GetWindowLongPtrW, SetWindowLongPtrW, GWL_EXSTYLE, WS_EX_NOACTIVATE,
-    };
     if hwnd.is_invalid() {
         log::warn!("floating noactivate: window not found");
         return;
     }
+    apply_noactivate_raw(hwnd.0 as isize);
+}
+
+/// 给定原始句柄补 WS_EX_NOACTIVATE（winapi 裸指针版：tauri 自带 windows 0.61，
+/// 本 crate 直连 0.58，两版 HWND 类型不互通，走裸指针绕开冲突；start_window_drag 同式）。
+#[cfg(target_os = "windows")]
+fn apply_noactivate_raw(hwnd_raw: isize) {
+    use winapi::um::winuser::{GetWindowLongPtrW, SetWindowLongPtrW, GWL_EXSTYLE, WS_EX_NOACTIVATE};
+    if hwnd_raw == 0 {
+        log::warn!("floating noactivate: window not found");
+        return;
+    }
+    let hwnd = hwnd_raw as *mut _;
     let old = unsafe { GetWindowLongPtrW(hwnd, GWL_EXSTYLE) };
-    let new = old | (WS_EX_NOACTIVATE.0 as isize);
+    let new = old | WS_EX_NOACTIVATE as isize;
     if new != old {
         unsafe { SetWindowLongPtrW(hwnd, GWL_EXSTYLE, new) };
     }
     let verify = unsafe { GetWindowLongPtrW(hwnd, GWL_EXSTYLE) };
-    log::info!("floating noactivate: hwnd={:p} exstyle {old:#x} -> {verify:#x}", hwnd.0);
+    log::info!(
+        "floating noactivate: hwnd={hwnd_raw:#x} exstyle {old:#x} -> {verify:#x}"
+    );
 }
 
 /// 显示悬浮窗但不激活（SW_SHOWNOACTIVATE）：单击/双击动作、设置页重显都不抢焦点。
@@ -1524,15 +1529,16 @@ fn apply_noactivate_hwnd(hwnd: windows::Win32::Foundation::HWND) {
 fn show_floating_noactivate<R: Runtime>(win: &tauri::WebviewWindow<R>) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
-        use windows::Win32::UI::WindowsAndMessaging::{ShowWindow, SW_SHOWNOACTIVATE};
+        use winapi::um::winuser::{ShowWindow, SW_SHOWNOACTIVATE};
         match win.hwnd() {
             Ok(hwnd) => {
-                apply_noactivate_hwnd(hwnd);
+                let raw = hwnd.0 as isize;
+                apply_noactivate_raw(raw);
                 unsafe {
-                    ShowWindow(hwnd, SW_SHOWNOACTIVATE);
+                    ShowWindow(raw as *mut _, SW_SHOWNOACTIVATE);
                 }
                 // ShowWindow 可能改写扩展样式，显示后再断言一次。
-                apply_noactivate_hwnd(hwnd);
+                apply_noactivate_raw(raw);
                 Ok(())
             }
             Err(e) => {
