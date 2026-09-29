@@ -440,6 +440,7 @@ export function useServer(options?: { audioLevel?: Ref<number>; isMuted?: Ref<bo
   let unlistenAecStatus: UnlistenFn | null = null;
   let unlistenAudioMetrics: UnlistenFn | null = null;
   let unlistenAudioLevel: UnlistenFn | null = null;
+  let unlistenFloatingToggled: UnlistenFn | null = null;
 
   // ---- Shared server prefs (server.json, also read/written by the CLI) ----
   interface ServerPrefsBackend {
@@ -580,6 +581,28 @@ export function useServer(options?: { audioLevel?: Ref<number>; isMuted?: Ref<bo
       if (options?.isMuted) options.isMuted.value = false;
     });
 
+    // Sync GUI state after floating-window toggles (backend changed, frontend stale).
+    // Mirrors the mount-time sync above: running+unconnected => connecting (waiting).
+    unlistenFloatingToggled = await listen('floating-toggled', async () => {
+      try {
+        const status = await invoke<{ isServerRunning: boolean; isConnected: boolean; isMuted: boolean }>('get_streaming_status');
+        if (status.isServerRunning) {
+          serverState.value = status.isConnected ? 'streaming' : 'connecting';
+          activeConnectionMode.value = connectionMode.value;
+          activePort.value = connectionMode.value === 'web' ? Number(webPort.value) : Number(serverPort.value);
+          if (options?.isMuted) {
+            options.isMuted.value = status.isMuted;
+          }
+        } else {
+          serverState.value = 'idle';
+          activeConnectionMode.value = null;
+          activePort.value = null;
+        }
+      } catch (e) {
+        console.error('Failed to sync after floating toggle:', e);
+      }
+    });
+
     // Auto-heal state when receiving audio metrics (TCP heartbeat)
     unlistenAudioMetrics = await listen('audio-metrics', () => {
       if (serverState.value === 'connecting' || serverState.value === 'starting') {
@@ -632,6 +655,7 @@ export function useServer(options?: { audioLevel?: Ref<number>; isMuted?: Ref<bo
     if (unlistenAecStatus) unlistenAecStatus();
     if (unlistenAudioMetrics) unlistenAudioMetrics();
     if (unlistenAudioLevel) unlistenAudioLevel();
+    if (unlistenFloatingToggled) unlistenFloatingToggled();
   });
 
   return {

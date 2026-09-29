@@ -196,7 +196,10 @@ function handleDoubleClick() {
   closeMenu();
   // 独立启停，不依赖主窗口。
   invoke<string>('toggle_streaming')
-    .then((r) => ftrace(`toggle_streaming ok: ${r}`))
+    .then((r) => {
+      ftrace(`toggle_streaming ok: ${r}`);
+      emit('floating-toggled', null).catch(() => {});
+    })
     .catch((err) => {
       console.error('toggle_streaming failed:', err);
       ftrace(`toggle_streaming failed: ${String(err)}`);
@@ -279,7 +282,10 @@ async function menuShow() {
 async function menuToggleStream() {
   await closeMenu();
   invoke<string>('toggle_streaming')
-    .then((r) => ftrace(`menu toggle_streaming ok: ${r}`))
+    .then((r) => {
+      ftrace(`menu toggle_streaming ok: ${r}`);
+      emit('floating-toggled', null).catch(() => {});
+    })
     .catch((err) => {
       console.error('toggle_streaming failed:', err);
       ftrace(`menu toggle_streaming failed: ${String(err)}`);
