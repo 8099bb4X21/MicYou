@@ -234,6 +234,20 @@ async function handleContextMenu(e: MouseEvent) {
   menuX.value = Math.min(e.clientX - rect.left, 220 - 180);
   menuY.value = Math.min(e.clientY - rect.top, 300 - 220);
   menuOpen.value = true;
+  ftrace(`menu open at ${menuX.value},${menuY.value}`);
+  // DOM self-check: is the menu actually laid out?
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const el = document.querySelector('.floating-menu') as HTMLElement | null;
+      if (!el) {
+        ftrace('menu el: null (not rendered)');
+        return;
+      }
+      const r = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      ftrace(`menu el: ${r.width}x${r.height} at ${r.left},${r.top} display=${cs.display} visibility=${cs.visibility} opacity=${cs.opacity}`);
+    });
+  });
 }
 
 async function closeMenu() {
