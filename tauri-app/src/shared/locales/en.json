@@ -400,7 +400,8 @@
     "exit": "Exit",
     "switchCli": "Switch to CLI Mode",
     "switchTui": "Switch to TUI Mode",
-    "sendKey": "Send RAlt+Space once"
+    "sendKey": "Send RAlt+Space once",
+    "floating": "Floating Window"
   },
   "closeConfirm": {
     "title": "Close MicYou",

@@ -1447,9 +1447,28 @@ pub fn hide_main_window(app: AppHandle) -> Result<(), String> {
 pub const FLOATING_WINDOW_LABEL: &str = "floating-window";
 
 #[tauri::command]
-pub fn show_floating_window(_app: AppHandle) -> Result<(), String> {
-    // Temporarily disabled (Issue #307 postponed)
-    log::info!("Floating window is temporarily disabled");
+pub fn show_floating_window(app: AppHandle) -> Result<(), String> {
+    use tauri::Manager;
+    if let Some(win) = app.get_webview_window(FLOATING_WINDOW_LABEL) {
+        win.show().map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+    let _win = tauri::WebviewWindowBuilder::new(
+        &app,
+        FLOATING_WINDOW_LABEL,
+        tauri::WebviewUrl::App("#/floating-window".into()),
+    )
+    .title("MicYou")
+    .inner_size(64.0, 64.0)
+    .resizable(false)
+    .decorations(false)
+    .transparent(true)
+    .shadow(false)
+    .always_on_top(true)
+    .skip_taskbar(true)
+    .focused(false)
+    .build()
+    .map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -1462,10 +1481,21 @@ pub fn hide_floating_window(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn toggle_floating_window(_app: AppHandle) -> Result<bool, String> {
-    // Temporarily disabled (Issue #307 postponed)
-    log::info!("Floating window is temporarily disabled");
-    Ok(false)
+pub fn toggle_floating_window(app: AppHandle) -> Result<bool, String> {
+    use tauri::Manager;
+    if let Some(win) = app.get_webview_window(FLOATING_WINDOW_LABEL) {
+        let visible = win.is_visible().unwrap_or(false);
+        if visible {
+            win.hide().map_err(|e| e.to_string())?;
+            Ok(false)
+        } else {
+            show_floating_window(app)?;
+            Ok(true)
+        }
+    } else {
+        show_floating_window(app)?;
+        Ok(true)
+    }
 }
 
 #[tauri::command]
@@ -1526,6 +1556,12 @@ pub async fn allow_firewall() -> Result<(), String> {
 #[tauri::command]
 pub fn import_winuhid_dll(path: String) -> Result<bool, String> {
     crate::remote_key::import_dll(&path)
+}
+
+/// 悬浮窗/取证用：点一次右Alt+空格。无驱动返回 Err，前端据此弹缺驱动提示。
+#[tauri::command]
+pub fn send_remote_key_once() -> Result<(), String> {
+    crate::remote_key::tap(crate::remote_key::KEY_ALT_SPACE)
 }
 
 #[tauri::command]

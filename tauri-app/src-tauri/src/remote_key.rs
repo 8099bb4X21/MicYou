@@ -432,6 +432,17 @@ pub fn release(vks: &[u16]) -> Result<(), String> {
     Ok(())
 }
 
+/// 点一下：DOWN→80ms→UP。托盘菜单、悬浮窗、取证命令共用。
+pub fn tap(key_id: u8) -> Result<(), String> {
+    let vks = vks_for_key(key_id).ok_or_else(|| format!("unknown remote key {key_id}"))?;
+    if !is_available() {
+        return Err("WinUHid unavailable".into());
+    }
+    press(&vks)?;
+    std::thread::sleep(Duration::from_millis(80));
+    release(&vks)
+}
+
 /// 强制全零键盘报告（panic release / sanitizer 用）
 pub fn release_all() -> Result<(), String> {
     ensure_init();

@@ -6,6 +6,7 @@
     @pointerup="handlePointerUp"
     @pointercancel="handlePointerUp"
     @dblclick="handleDoubleClick"
+    @contextmenu.prevent="handleContextMenu"
   >
     <svg
       viewBox="0 0 40 40"
@@ -67,25 +68,45 @@
         />
       </g>
     </svg>
+    <!-- Right-click menu (same items as tray) -->
+    <div v-if="menuOpen" class="floating-menu" :style="{ left: menuX + 'px', top: menuY + 'px' }">
+      <button @click="menuShow">{{ t('tray.show') }}</button>
+      <button @click="menuToggleStream">{{ isStreaming ? t('tray.stop') : t('tray.start') }}</button>
+      <button @click="menuSendKey">{{ t('tray.sendKey') }}</button>
+      <button @click="menuSwitchCli">{{ t('tray.switchCli') }}</button>
+      <button @click="menuSwitchTui">{{ t('tray.switchTui') }}</button>
+      <button @click="menuExit">{{ t('tray.exit') }}</button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
-import { listen, type UnlistenFn } from '@tauri-apps/api/event';
+import { listen, emit, type UnlistenFn } from '@tauri-apps/api/event';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { PhysicalPosition } from '@tauri-apps/api/dpi';
+import { PhysicalPosition, LogicalSize } from '@tauri-apps/api/dpi';
+import { useI18n } from 'vue-i18n';
 import { useTheme } from '@/features/theme/composables/useTheme';
 
 // Activate theme synchronization for the floating window webview
 useTheme();
 
+const { t } = useI18n();
 const appWindow = getCurrentWebviewWindow();
 
 const targetAudioLevel = ref(0);
 const smoothAudioLevel = ref(0);
 const isMuted = ref(false);
+const isStreaming = ref(false);
+
+// Right-click menu state
+const menuOpen = ref(false);
+const menuX = ref(0);
+const menuY = ref(0);
+
+// Single/double click disambiguation (250ms)
+let clickTimer: ReturnType<typeof setTimeout> | null = null;
 
 const safeAudioLevel = computed(() => Math.max(0, Math.min(1, smoothAudioLevel.value)));
 
@@ -161,23 +182,97 @@ function handlePointerUp(e: PointerEvent) {
   } catch {}
 
   if (!hasDragged) {
-    toggleMute();
+    // Delay single-click to distinguish from double-click.
+    if (clickTimer) clearTimeout(clickTimer);
+    clickTimer = setTimeout(() => {
+      clickTimer = null;
+      void sendKeyOnce();
+    }, 250);
   }
   hasDragged = false;
 }
 
 function handleDoubleClick() {
+  if (clickTimer) {
+    clearTimeout(clickTimer);
+    clickTimer = null;
+  }
+  closeMenu();
+  // Reuse main-window toggle logic (settings context lives there).
+  emit('tray-action', 'toggle_stream').catch((err) => console.error('toggle_stream failed:', err));
+}
+
+/** Single click = tap RAlt+Space once. */
+async function sendKeyOnce() {
+  try {
+    await invoke('send_remote_key_once');
+  } catch (e) {
+    console.error('send_remote_key_once failed:', e);
+    // Surface the existing driver-missing dialog in the main window.
+    emit('remote-key-driver-missing', null).catch(() => {});
+  }
+}
+
+async function handleContextMenu(e: MouseEvent) {
+  if (clickTimer) {
+    clearTimeout(clickTimer);
+    clickTimer = null;
+  }
+  // Refresh streaming flag for the toggle label.
+  try {
+    const status = await invoke<StreamingStatus>('get_streaming_status');
+    isStreaming.value = status.isConnected || status.isServerRunning;
+  } catch {}
+  // Enlarge the window so the menu fits; restore on close.
+  try {
+    await appWindow.setSize(new LogicalSize(220, 300));
+  } catch {}
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+  menuX.value = Math.min(e.clientX - rect.left, 220 - 180);
+  menuY.value = Math.min(e.clientY - rect.top, 300 - 220);
+  menuOpen.value = true;
+}
+
+async function closeMenu() {
+  if (!menuOpen.value) return;
+  menuOpen.value = false;
+  try {
+    await appWindow.setSize(new LogicalSize(64, 64));
+  } catch {}
+}
+
+async function menuShow() {
+  await closeMenu();
   invoke('show_main_window').catch((err) => console.error('show_main_window failed:', err));
 }
 
-async function toggleMute() {
-  const targetMute = !isMuted.value;
-  isMuted.value = targetMute;
-  try {
-    await invoke('set_mute_state', { isMuted: targetMute });
-  } catch (e) {
-    console.error('set_mute_state failed:', e);
-  }
+async function menuToggleStream() {
+  await closeMenu();
+  emit('tray-action', 'toggle_stream').catch((err) => console.error('toggle_stream failed:', err));
+}
+
+async function menuSendKey() {
+  await closeMenu();
+  await sendKeyOnce();
+}
+
+async function menuSwitchCli() {
+  await closeMenu();
+  emit('tray-action', 'switch_cli').catch((err) => console.error('switch_cli failed:', err));
+}
+
+async function menuSwitchTui() {
+  await closeMenu();
+  emit('tray-action', 'switch_tui').catch((err) => console.error('switch_tui failed:', err));
+}
+
+async function menuExit() {
+  await closeMenu();
+  invoke('exit_app').catch((err) => console.error('exit_app failed:', err));
+}
+
+function handleKeyDown(e: KeyboardEvent) {
+  if (e.key === 'Escape') void closeMenu();
 }
 
 function animate() {
@@ -203,15 +298,17 @@ onMounted(async () => {
   });
 
   unlistenDeviceConnected = await listen('device-connected', () => {
-    // Device connected
+    isStreaming.value = true;
   });
 
   unlistenDeviceDisconnected = await listen('device-disconnected', () => {
+    isStreaming.value = false;
     targetAudioLevel.value = 0;
     smoothAudioLevel.value = 0;
   });
 
   unlistenServerStopped = await listen('server-stopped', () => {
+    isStreaming.value = false;
     targetAudioLevel.value = 0;
     smoothAudioLevel.value = 0;
   });
@@ -219,15 +316,19 @@ onMounted(async () => {
   try {
     const status = await invoke<StreamingStatus>('get_streaming_status');
     isMuted.value = status.isMuted;
+    isStreaming.value = status.isConnected || status.isServerRunning;
   } catch (e) {
     console.error('get_streaming_status failed:', e);
   }
 
+  window.addEventListener('keydown', handleKeyDown);
   animationId = requestAnimationFrame(animate);
 });
 
 onUnmounted(() => {
   if (animationId) cancelAnimationFrame(animationId);
+  if (clickTimer) clearTimeout(clickTimer);
+  window.removeEventListener('keydown', handleKeyDown);
   if (unlistenAudioLevel) unlistenAudioLevel();
   if (unlistenMute) unlistenMute();
   if (unlistenDeviceConnected) unlistenDeviceConnected();
@@ -273,5 +374,35 @@ html, body, #app {
   display: block;
   user-select: none;
   pointer-events: none;
+}
+
+.floating-menu {
+  position: absolute;
+  z-index: 10;
+  min-width: 170px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+}
+
+.floating-menu button {
+  text-align: left;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #e2e8f0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.floating-menu button:hover {
+  background: rgba(255, 255, 255, 0.12);
 }
 </style>

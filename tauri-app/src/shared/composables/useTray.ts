@@ -13,6 +13,7 @@ export interface TrayMenuStrings {
   switchCli: string;
   switchTui: string;
   sendKey: string;
+  floating: string;
 }
 
 export interface TrayState {
@@ -41,6 +42,7 @@ export function trayStringsFromI18n(
     switchCli: t("tray.switchCli"),
     switchTui: t("tray.switchTui"),
     sendKey: t("tray.sendKey"),
+    floating: t("tray.floating"),
   };
 }
 
