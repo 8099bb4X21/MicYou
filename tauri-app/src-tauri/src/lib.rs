@@ -141,6 +141,10 @@ pub fn run() {
             if let Err(e) = crate::tray::build_tray(app.handle()) {
                 log::warn!(target: "tray", "failed to build tray: {e}");
             }
+            // 悬浮窗默认显示（远程按键分支需求）。
+            if let Err(e) = crate::commands::show_floating_window(app.handle()) {
+                log::warn!(target: "tray", "failed to auto-show floating window: {e}");
+            }
 
             {
                 let state = app.state::<server::ServerState>();

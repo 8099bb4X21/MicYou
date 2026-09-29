@@ -13,60 +13,29 @@
       class="floating-svg"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <!-- Base Background Contrast Disc -->
-      <circle cx="20" cy="20" r="18" fill="#0f172a" fill-opacity="0.92" />
-
-      <!-- 1. Muted State: Error Red Ring & Diagonal Slash -->
-      <g v-if="isMuted">
-        <circle
-          cx="20"
-          cy="20"
-          r="15"
-          fill="none"
-          stroke="#ef4444"
-          stroke-width="3"
-          stroke-opacity="0.95"
-        />
-        <line
-          x1="9.5"
-          y1="9.5"
-          x2="30.5"
-          y2="30.5"
-          stroke="#ef4444"
-          stroke-width="3"
-          stroke-linecap="round"
-        />
-      </g>
-
-      <!-- 2. Active Volume Ring (Clean ring, no extra dots or wave bars) -->
-      <g v-else>
-        <!-- Background Track Ring (Theme Primary 25% Opacity) -->
-        <circle
-          cx="20"
-          cy="20"
-          r="15"
-          fill="none"
-          stroke="currentColor"
-          class="text-primary"
-          stroke-width="3"
-          stroke-opacity="0.25"
-        />
-        <!-- Dynamic Volume Arc (Starts at top -90deg, sweeps clockwise) -->
-        <circle
-          v-if="safeAudioLevel > 0.005"
-          cx="20"
-          cy="20"
-          r="15"
-          fill="none"
-          stroke="currentColor"
-          class="text-primary"
-          stroke-width="3"
-          stroke-linecap="round"
-          :stroke-dasharray="94.25"
-          :stroke-dashoffset="94.25 * (1 - safeAudioLevel)"
-          transform="rotate(-90 20 20)"
-        />
-      </g>
+      <!-- Static blue disc -->
+      <circle cx="20" cy="20" r="18" fill="#2563eb" fill-opacity="0.92" />
+      <!-- Thin white ring, brighter while streaming (static, no animation) -->
+      <circle
+        cx="20"
+        cy="20"
+        r="15"
+        fill="none"
+        stroke="#ffffff"
+        :stroke-opacity="isStreaming ? 0.9 : 0.35"
+        stroke-width="2"
+      />
+      <!-- Minimalist white microphone -->
+      <rect x="17" y="8" width="6" height="12" rx="3" fill="#ffffff" />
+      <path
+        d="M12.5 18.5 a7.5 7.5 0 0 0 15 0"
+        fill="none"
+        stroke="#ffffff"
+        stroke-width="2.4"
+        stroke-linecap="round"
+      />
+      <line x1="20" y1="26" x2="20" y2="30.5" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" />
+      <line x1="16" y1="30.5" x2="24" y2="30.5" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" />
     </svg>
     <!-- Right-click menu (same items as tray) -->
     <div v-if="menuOpen" class="floating-menu" :style="{ left: menuX + 'px', top: menuY + 'px' }">
@@ -81,7 +50,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { listen, emit, type UnlistenFn } from '@tauri-apps/api/event';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
@@ -101,8 +70,6 @@ function ftrace(msg: string) {
   console.log('[floating]', msg);
 }
 
-const targetAudioLevel = ref(0);
-const smoothAudioLevel = ref(0);
 const isMuted = ref(false);
 const isStreaming = ref(false);
 
@@ -114,15 +81,10 @@ const menuY = ref(0);
 // Single/double click disambiguation (250ms)
 let clickTimer: ReturnType<typeof setTimeout> | null = null;
 
-const safeAudioLevel = computed(() => Math.max(0, Math.min(1, smoothAudioLevel.value)));
-
-let unlistenAudioLevel: UnlistenFn | null = null;
 let unlistenMute: UnlistenFn | null = null;
 let unlistenDeviceConnected: UnlistenFn | null = null;
 let unlistenDeviceDisconnected: UnlistenFn | null = null;
 let unlistenServerStopped: UnlistenFn | null = null;
-
-let animationId = 0;
 
 // Pointer Dragging & Click Handling
 let isPointerDown = false;
@@ -287,13 +249,6 @@ function handleKeyDown(e: KeyboardEvent) {
   if (e.key === 'Escape') void closeMenu();
 }
 
-function animate() {
-  // Smooth lerp tracking
-  const diff = targetAudioLevel.value - smoothAudioLevel.value;
-  smoothAudioLevel.value += diff * 0.2;
-  animationId = requestAnimationFrame(animate);
-}
-
 interface StreamingStatus {
   isServerRunning: boolean;
   isConnected: boolean;
@@ -301,10 +256,6 @@ interface StreamingStatus {
 }
 
 onMounted(async () => {
-  unlistenAudioLevel = await listen<number>('audio-level', (event) => {
-    targetAudioLevel.value = Math.min(1, Math.max(0, event.payload / 100));
-  });
-
   unlistenMute = await listen<boolean>('mute-state-changed', (event) => {
     isMuted.value = event.payload;
   });
@@ -315,14 +266,10 @@ onMounted(async () => {
 
   unlistenDeviceDisconnected = await listen('device-disconnected', () => {
     isStreaming.value = false;
-    targetAudioLevel.value = 0;
-    smoothAudioLevel.value = 0;
   });
 
   unlistenServerStopped = await listen('server-stopped', () => {
     isStreaming.value = false;
-    targetAudioLevel.value = 0;
-    smoothAudioLevel.value = 0;
   });
 
   try {
@@ -338,14 +285,11 @@ onMounted(async () => {
     ftrace(`window.onerror: ${String(message)}`);
   };
   ftrace('floating mounted');
-  animationId = requestAnimationFrame(animate);
 });
 
 onUnmounted(() => {
-  if (animationId) cancelAnimationFrame(animationId);
   if (clickTimer) clearTimeout(clickTimer);
   window.removeEventListener('keydown', handleKeyDown);
-  if (unlistenAudioLevel) unlistenAudioLevel();
   if (unlistenMute) unlistenMute();
   if (unlistenDeviceConnected) unlistenDeviceConnected();
   if (unlistenDeviceDisconnected) unlistenDeviceDisconnected();
