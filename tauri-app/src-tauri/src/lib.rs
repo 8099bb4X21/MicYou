@@ -225,6 +225,7 @@ pub fn run() {
             commands::allow_firewall,
             commands::import_winuhid_dll,
             commands::send_remote_key_once,
+            commands::log_floating,
             commands::exit_app,
             commands::set_mute_state,
             commands::get_streaming_status,

@@ -1580,6 +1580,13 @@ pub fn send_remote_key_once() -> Result<(), String> {
     crate::remote_key::tap(crate::remote_key::KEY_ALT_SPACE)
 }
 
+/// 悬浮窗取证日志：前端交互事件直写应用日志（设置页可导出）。
+#[tauri::command]
+pub fn log_floating(msg: String) -> Result<(), String> {
+    log::info!(target: "floating", "{msg}");
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn exit_app(app: AppHandle, state: State<'_, ServerState>) -> Result<(), String> {
     let _ = stop_server(app.clone(), state).await;

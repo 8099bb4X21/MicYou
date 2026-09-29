@@ -95,6 +95,12 @@ useTheme();
 const { t } = useI18n();
 const appWindow = getCurrentWebviewWindow();
 
+// Fire-and-forget frontend trace (backend log, exportable via settings).
+function ftrace(msg: string) {
+  invoke('log_floating', { msg }).catch(() => {});
+  console.log('[floating]', msg);
+}
+
 const targetAudioLevel = ref(0);
 const smoothAudioLevel = ref(0);
 const isMuted = ref(false);
@@ -128,6 +134,7 @@ let initialWinY = 0;
 
 async function handlePointerDown(e: PointerEvent) {
   if (e.button !== 0) return;
+  ftrace(`pointerdown btn=0 x=${e.screenX} y=${e.screenY}`);
   isPointerDown = true;
   hasDragged = false;
   startScreenX = e.screenX;
@@ -186,13 +193,17 @@ function handlePointerUp(e: PointerEvent) {
     if (clickTimer) clearTimeout(clickTimer);
     clickTimer = setTimeout(() => {
       clickTimer = null;
+      ftrace('single-click fire');
       void sendKeyOnce();
     }, 250);
+  } else {
+    ftrace('drag end');
   }
   hasDragged = false;
 }
 
 function handleDoubleClick() {
+  ftrace('double-click fire');
   if (clickTimer) {
     clearTimeout(clickTimer);
     clickTimer = null;
@@ -214,6 +225,7 @@ async function sendKeyOnce() {
 }
 
 async function handleContextMenu(e: MouseEvent) {
+  ftrace('contextmenu fire');
   if (clickTimer) {
     clearTimeout(clickTimer);
     clickTimer = null;
@@ -322,6 +334,10 @@ onMounted(async () => {
   }
 
   window.addEventListener('keydown', handleKeyDown);
+  window.onerror = (message) => {
+    ftrace(`window.onerror: ${String(message)}`);
+  };
+  ftrace('floating mounted');
   animationId = requestAnimationFrame(animate);
 });
 

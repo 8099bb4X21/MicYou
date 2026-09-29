@@ -436,11 +436,14 @@ pub fn release(vks: &[u16]) -> Result<(), String> {
 pub fn tap(key_id: u8) -> Result<(), String> {
     let vks = vks_for_key(key_id).ok_or_else(|| format!("unknown remote key {key_id}"))?;
     if !is_available() {
+        log::warn!("remote-key tap: WinUHid unavailable");
         return Err("WinUHid unavailable".into());
     }
     press(&vks)?;
     std::thread::sleep(Duration::from_millis(80));
-    release(&vks)
+    release(&vks)?;
+    log::info!("remote-key tap done key_id={key_id}");
+    Ok(())
 }
 
 /// 强制全零键盘报告（panic release / sanitizer 用）
