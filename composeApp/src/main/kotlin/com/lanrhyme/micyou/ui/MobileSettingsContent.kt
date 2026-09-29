@@ -81,8 +81,6 @@ import com.lanrhyme.micyou.network.VK_ENTER
 import com.lanrhyme.micyou.network.VK_RALT
 import com.lanrhyme.micyou.network.VK_SPACE
 import com.lanrhyme.micyou.settings.ButtonSlot
-import com.lanrhyme.micyou.network.VK_RALT
-import com.lanrhyme.micyou.settings.ButtonSlot
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext

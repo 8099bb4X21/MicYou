@@ -106,7 +106,6 @@
       "actionShow": "Show main window",
       "actionNothing": "Do nothing",
       "sendKeyLabel": "Send key (multi-select)",
-      "sendKeyCustom": "Send custom key",
       "keyLCtrl": "LCtrl",
       "keyRCtrl": "RCtrl",
       "keyLAlt": "LAlt",

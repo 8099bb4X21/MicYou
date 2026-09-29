@@ -106,7 +106,6 @@
       "actionShow": "显示主窗口",
       "actionNothing": "无动作",
       "sendKeyLabel": "发送按键（多选）",
-      "sendKeyCustom": "发送自定义按键",
       "keyLCtrl": "左Ctrl",
       "keyRCtrl": "右Ctrl",
       "keyLAlt": "左Alt",

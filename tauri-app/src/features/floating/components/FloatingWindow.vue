@@ -43,7 +43,6 @@
     <div v-if="menuOpen" class="floating-menu" :style="{ left: menuX + 'px', top: menuY + 'px' }">
       <button @click="menuShow">{{ t('tray.show') }}</button>
       <button @click="menuToggleStream">{{ isStreaming ? t('tray.stop') : t('tray.start') }}</button>
-      <button @click="menuSendCustom">{{ t('settings.floating.sendKeyCustom') }}</button>
       <button @click="menuSwitchCli">{{ t('tray.switchCli') }}</button>
       <button @click="menuSwitchTui">{{ t('tray.switchTui') }}</button>
       <button @click="menuExit">{{ t('tray.exit') }}</button>
@@ -343,11 +342,6 @@ async function menuToggleStream() {
       console.error('toggle_streaming failed:', err);
       ftrace(`menu toggle_streaming failed: ${String(err)}`);
     });
-}
-
-async function menuSendCustom() {
-  await closeMenu();
-  await sendKeyOnce();
 }
 
 async function menuSwitchCli() {
