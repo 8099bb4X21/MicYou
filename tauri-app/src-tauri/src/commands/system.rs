@@ -1500,7 +1500,7 @@ fn apply_noactivate() {
     let new = old | (WS_EX_NOACTIVATE.0 as isize);
     unsafe { SetWindowLongPtrW(hwnd, GWL_EXSTYLE, new) };
     let verify = unsafe { GetWindowLongPtrW(hwnd, GWL_EXSTYLE) };
-    log::info!("floating noactivate: hwnd={} exstyle {old:#x} -> {verify:#x}", hwnd.0);
+    log::info!("floating noactivate: hwnd={:p} exstyle {old:#x} -> {verify:#x}", hwnd.0);
 }
 
 #[cfg(not(target_os = "windows"))]
