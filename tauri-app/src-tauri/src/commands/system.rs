@@ -1685,10 +1685,16 @@ pub fn send_wake() -> Result<String, String> {
     }
 }
 
-/// 悬浮窗/取证用：点一次右Alt+空格。无驱动返回 Err，前端据此弹缺驱动提示。
+/// 悬浮窗发送键：按配置点一次对应按键。key 取值 ralt | ralt_space | enter，
+/// 缺省 ralt_space；无驱动返回 Err，前端据此弹缺驱动提示。
 #[tauri::command]
-pub fn send_remote_key_once() -> Result<(), String> {
-    crate::remote_key::tap(crate::remote_key::KEY_ALT_SPACE)
+pub fn send_remote_key_once(key: Option<String>) -> Result<(), String> {
+    let key_id = match key.as_deref() {
+        Some("ralt") => crate::remote_key::KEY_RALT,
+        Some("enter") => crate::remote_key::KEY_ENTER,
+        _ => crate::remote_key::KEY_ALT_SPACE,
+    };
+    crate::remote_key::tap(key_id)
 }
 
 /// 悬浮窗取证日志：前端交互事件直写应用日志（设置页可导出）。

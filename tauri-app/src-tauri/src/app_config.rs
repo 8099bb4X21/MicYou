@@ -105,6 +105,9 @@ pub struct UiPrefs {
     /// 悬浮窗双击动作：toggle | show | send | nothing。
     #[serde(default = "default_dblclick_action")]
     pub floating_dblclick: String,
+    /// 悬浮窗发送按键：ralt | ralt_space | enter。
+    #[serde(default = "default_send_key")]
+    pub floating_send: String,
 }
 
 impl Default for UiPrefs {
@@ -115,6 +118,7 @@ impl Default for UiPrefs {
             floating_visible: true,
             floating_click: default_click_action(),
             floating_dblclick: default_dblclick_action(),
+            floating_send: default_send_key(),
         }
     }
 }
@@ -129,6 +133,10 @@ fn default_click_action() -> String {
 
 fn default_dblclick_action() -> String {
     "toggle".to_string()
+}
+
+fn default_send_key() -> String {
+    "ralt_space".to_string()
 }
 
 pub fn load_ui_prefs() -> UiPrefs {

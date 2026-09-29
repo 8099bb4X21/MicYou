@@ -104,7 +104,11 @@
       "actionSend": "Send RAlt+Space",
       "actionToggle": "Start/Stop streaming",
       "actionShow": "Show main window",
-      "actionNothing": "Do nothing"
+      "actionNothing": "Do nothing",
+      "sendKeyLabel": "Send key",
+      "keyRalt": "Right Alt",
+      "keyRaltSpace": "Right Alt + Space",
+      "keyEnter": "Enter"
     },
     "theme": {
       "title": "Theme",

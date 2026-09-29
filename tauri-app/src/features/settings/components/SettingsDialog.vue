@@ -294,6 +294,27 @@
                       </Select>
                     </div>
                   </div>
+                  <div class="mt-2">
+                    <p class="mb-1 text-xs font-semibold text-on-surface-variant">
+                      {{ $t('settings.floating.sendKeyLabel') }}
+                    </p>
+                    <Select v-model="floatingSend" @update:model-value="saveFloatingPrefs()">
+                      <SelectTrigger
+                        class="w-full bg-surface-container border-none shadow-none rounded-lg text-sm font-medium"
+                      >
+                        <SelectValue placeholder="Key" />
+                      </SelectTrigger>
+                      <SelectContent
+                        class="border-surface-variant/20 rounded-lg bg-surface shadow-lg"
+                      >
+                        <SelectGroup>
+                          <SelectItem value="ralt_space">{{ $t('settings.floating.keyRaltSpace') }}</SelectItem>
+                          <SelectItem value="ralt">{{ $t('settings.floating.keyRalt') }}</SelectItem>
+                          <SelectItem value="enter">{{ $t('settings.floating.keyEnter') }}</SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <!-- Run at Startup -->
@@ -1834,6 +1855,7 @@ const autostartEnabled = ref(false);
 const floatingVisible = ref(true);
 const floatingClick = ref('send');
 const floatingDblclick = ref('toggle');
+const floatingSend = ref('ralt_space');
 let floatingLoaded = false;
 
 async function loadFloatingPrefs() {
@@ -1842,10 +1864,12 @@ async function loadFloatingPrefs() {
       floatingVisible: boolean;
       floatingClick: string;
       floatingDblclick: string;
+      floatingSend: string;
     }>('get_floating_prefs');
     floatingVisible.value = p.floatingVisible;
     floatingClick.value = p.floatingClick || 'send';
     floatingDblclick.value = p.floatingDblclick || 'toggle';
+    floatingSend.value = p.floatingSend || 'ralt_space';
     floatingLoaded = true;
   } catch (e) {
     console.error('get_floating_prefs failed:', e);
@@ -1859,15 +1883,22 @@ async function saveFloatingPrefs() {
       visible: floatingVisible.value,
       click: floatingClick.value,
       dblclick: floatingDblclick.value,
+      send: floatingSend.value,
     });
     await tauriEmit('floating-prefs-changed', {
       floatingVisible: floatingVisible.value,
       floatingClick: floatingClick.value,
       floatingDblclick: floatingDblclick.value,
+      floatingSend: floatingSend.value,
     });
     if (!floatingVisible.value) {
       try {
         await invoke('hide_floating_window');
+      } catch {}
+    } else {
+      // 关掉再打开只能走托盘；设置里打开必须立即生效。
+      try {
+        await invoke('show_floating_window');
       } catch {}
     }
   } catch (e) {

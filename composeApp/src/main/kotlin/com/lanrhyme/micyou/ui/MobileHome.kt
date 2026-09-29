@@ -588,12 +588,15 @@ private fun MobileCompactStatus(
 ) {
     val isRunning = state.streamState == StreamState.Streaming
     val isConnecting = state.streamState == StreamState.Connecting
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+    // 状态文字与开始/停止同一排，极致压缩给下方按钮腾高度。
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        MobileStatusText(state = state)
+        Box(modifier = Modifier.weight(1f)) {
+            MobileStatusText(state = state)
+        }
         MobileMainButton(
             isRunning = isRunning,
             isConnecting = isConnecting,
@@ -609,6 +612,8 @@ private fun MobileCompactStatus(
                 textAlign = TextAlign.Center
             )
         }
+    }
+}
     }
 }
 
@@ -802,7 +807,7 @@ private fun MobileMuteButton(
 @Composable
 private fun MobileStatusText(state: AppUiState) {
     val text = when (state.streamState) {
-        StreamState.Streaming -> stringResource(R.string.statusStreaming, state.ipAddress, state.port)
+        StreamState.Streaming -> stringResource(R.string.statusStreaming, state.ipAddress)
         StreamState.Connecting -> stringResource(R.string.statusConnecting)
         StreamState.Error -> stringResource(R.string.statusError)
         else -> stringResource(R.string.statusIdle)
@@ -817,7 +822,7 @@ private fun MobileStatusText(state: AppUiState) {
         text,
         style = MaterialTheme.typography.labelLarge,
         color = color,
-        modifier = Modifier.padding(vertical = 12.dp).testTag("home_status_text")
+        modifier = Modifier.padding(vertical = 4.dp).testTag("home_status_text")
             .semantics { contentDescription = "home_status_text" },
         textAlign = TextAlign.Center
     )

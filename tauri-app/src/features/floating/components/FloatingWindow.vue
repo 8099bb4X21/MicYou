@@ -82,11 +82,13 @@ const isStreaming = ref(false);
 // 悬浮窗动作配置（设置页下发，默认单击发送、双击启停）。
 const clickAction = ref('send');
 const dblclickAction = ref('toggle');
+const sendKey = ref('ralt_space');
 
 interface FloatingPrefs {
   floatingVisible: boolean;
   floatingClick: string;
   floatingDblclick: string;
+  floatingSend: string;
 }
 
 async function loadFloatingPrefs() {
@@ -94,7 +96,8 @@ async function loadFloatingPrefs() {
     const p = await invoke<FloatingPrefs>('get_floating_prefs');
     clickAction.value = p.floatingClick || 'send';
     dblclickAction.value = p.floatingDblclick || 'toggle';
-    ftrace(`floating prefs: click=${clickAction.value} dbl=${dblclickAction.value}`);
+    sendKey.value = p.floatingSend || 'ralt_space';
+    ftrace(`floating prefs: click=${clickAction.value} dbl=${dblclickAction.value} key=${sendKey.value}`);
   } catch (e) {
     console.error('get_floating_prefs failed:', e);
   }
@@ -255,10 +258,11 @@ function handleDoubleClick() {
   }
 }
 
-/** Single click = tap RAlt+Space once. */
+/** Single click = tap the configured key once. */
 async function sendKeyOnce() {
   try {
-    await invoke('send_remote_key_once');
+    await invoke('send_remote_key_once', { key: sendKey.value });
+    ftrace(`send key ok: ${sendKey.value}`);
   } catch (e) {
     console.error('send_remote_key_once failed:', e);
     // Surface the existing driver-missing dialog in the main window.
@@ -379,7 +383,8 @@ onMounted(async () => {
   unlistenFloatingPrefs = await listen<FloatingPrefs>('floating-prefs-changed', (event) => {
     clickAction.value = event.payload.floatingClick || 'send';
     dblclickAction.value = event.payload.floatingDblclick || 'toggle';
-    ftrace(`floating prefs live: click=${clickAction.value} dbl=${dblclickAction.value}`);
+    sendKey.value = event.payload.floatingSend || 'ralt_space';
+    ftrace(`floating prefs live: click=${clickAction.value} dbl=${dblclickAction.value} key=${sendKey.value}`);
   });
 
   await loadFloatingPrefs();

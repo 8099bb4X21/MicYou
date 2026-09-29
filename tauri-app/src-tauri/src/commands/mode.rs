@@ -398,19 +398,29 @@ pub fn get_floating_prefs() -> crate::app_config::UiPrefs {
     crate::app_config::load_ui_prefs()
 }
 
-/// 悬浮窗设置保存（action 取值 send | show | toggle | nothing，非法回退默认）。
+/// 悬浮窗设置保存（action 取值 send | show | toggle | nothing，send键取值 ralt | ralt_space | enter，非法回退默认）。
 #[tauri::command]
-pub fn set_floating_prefs(visible: bool, click: String, dblclick: String) -> Result<(), String> {
+pub fn set_floating_prefs(
+    visible: bool,
+    click: String,
+    dblclick: String,
+    send: String,
+) -> Result<(), String> {
     fn norm(v: &str, fallback: &str) -> String {
         match v {
             "send" | "show" | "toggle" | "nothing" => v.to_string(),
             _ => fallback.to_string(),
         }
     }
+    let send_norm = match send.as_str() {
+        "ralt" | "ralt_space" | "enter" => send,
+        _ => "ralt_space".to_string(),
+    };
     let mut prefs = crate::app_config::load_ui_prefs();
     prefs.floating_visible = visible;
     prefs.floating_click = norm(&click, "send");
     prefs.floating_dblclick = norm(&dblclick, "toggle");
+    prefs.floating_send = send_norm;
     crate::app_config::save_ui_prefs(&prefs)
 }
 

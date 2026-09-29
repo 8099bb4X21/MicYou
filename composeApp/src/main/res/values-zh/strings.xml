@@ -158,7 +158,7 @@
     <string name="remoteKeyEnter">回车</string>
     <string name="statusIdle">未连接</string>
     <string name="statusConnecting">连接中…</string>
-    <string name="statusStreaming">已连接 · %1$s:%2$s</string>
+    <string name="statusStreaming">已连接 · %1$s</string>
     <string name="statusError">连接异常</string>
     <string name="autoDisconnectLabel">每天定时断开</string>
     <string name="autoDisconnectDesc">每天到点自动停止串流，当天只执行一次</string>
