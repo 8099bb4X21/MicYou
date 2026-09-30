@@ -139,149 +139,10 @@ jobs:
           path: ci-artifacts/MicYou-Win-${{ steps.version.outputs.version }}-installer.exe
           if-no-files-found: ignore
 
-  # ----------------- Tauri macOS 构建 (arm64) -----------------
-  build-tauri-macos:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - arch: arm64
-            runner: macos-latest
-            target: aarch64-apple-darwin
-    runs-on: ${{ matrix.runner }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - name: Read Version
-        id: version
-        run: |
-          VERSION=$(grep "^project.version=" gradle.properties | cut -d'=' -f2 | tr -d '\r')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: tauri-app/package-lock.json
-      - name: Setup Rust (stable)
-        uses: dtolnay/rust-toolchain@stable
-      - name: Setup Rust Target
-        run: rustup target add ${{ matrix.target }}
-      - name: Cache Rust
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: tauri-app -> target
-          cache-on-failure: true
-      - name: Install cargo-about
-        uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-about@0.9.1
-      - name: Install Frontend Dependencies
-        run: npm ci --include=dev
-        working-directory: tauri-app
-
-      - name: Build Tauri App (macOS)
-        run: npm run tauri -- build --bundles dmg --target ${{ matrix.target }}
-        working-directory: tauri-app
-      - name: Prepare Artifact
-        run: |
-          mkdir -p ci-artifacts
-          shopt -s nullglob
-          dmg_files=( tauri-app/target/${{ matrix.target }}/release/bundle/dmg/*.dmg )
-          if [ ${#dmg_files[@]} -eq 0 ]; then
-            echo "::error::No macOS DMG found"
-            exit 1
-          fi
-          cp "${dmg_files[0]}" "ci-artifacts/MicYou-macOS-${{ steps.version.outputs.version }}-${{ matrix.arch }}.dmg"
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: MicYou-macOS-${{ matrix.arch }}-${{ steps.version.outputs.version }}
-          path: ci-artifacts/MicYou-macOS-${{ steps.version.outputs.version }}-${{ matrix.arch }}.dmg
-          if-no-files-found: error
-
-  # ----------------- Tauri Linux 构建 -----------------
-  build-tauri-linux:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - name: Read Version
-        id: version
-        run: |
-          VERSION=$(grep "^project.version=" gradle.properties | cut -d'=' -f2 | tr -d '\r')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: tauri-app/package-lock.json
-      - name: Setup Rust (stable)
-        uses: dtolnay/rust-toolchain@stable
-      - name: Cache Rust
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: tauri-app -> target
-          cache-on-failure: true
-      - name: Install cargo-about
-        uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-about@0.9.1
-      - name: Install System Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev \
-            patchelf \
-            libxdo-dev \
-            libssl-dev \
-            libasound2-dev
-      - name: Install Frontend Dependencies
-        run: npm ci --include=dev
-        working-directory: tauri-app
-      - name: Build Tauri App (Linux)
-        run: npm run tauri -- build --bundles deb,rpm,appimage
-        working-directory: tauri-app
-      - name: Prepare Artifacts
-        run: |
-          mkdir -p ci-artifacts
-          VER="${{ steps.version.outputs.version }}"
-          shopt -s nullglob
-          deb_files=( tauri-app/target/release/bundle/deb/*.deb )
-          rpm_files=( tauri-app/target/release/bundle/rpm/*.rpm )
-          appimage_files=( tauri-app/target/release/bundle/appimage/*.AppImage )
-          if [ ${#deb_files[@]} -eq 0 ] || [ ${#rpm_files[@]} -eq 0 ] || [ ${#appimage_files[@]} -eq 0 ]; then
-            echo "::error::One or more Linux bundles are missing"
-            exit 1
-          fi
-          cp "${deb_files[0]}" "ci-artifacts/MicYou-Linux-$VER.deb"
-          cp "${rpm_files[0]}" "ci-artifacts/MicYou-Linux-$VER.rpm"
-          cp "${appimage_files[0]}" "ci-artifacts/MicYou-Linux-$VER.AppImage"
-      - name: Upload DEB Artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: MicYou-Linux-${{ steps.version.outputs.version }}-deb
-          path: ci-artifacts/MicYou-Linux-${{ steps.version.outputs.version }}.deb
-          if-no-files-found: error
-      - name: Upload RPM Artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: MicYou-Linux-${{ steps.version.outputs.version }}-rpm
-          path: ci-artifacts/MicYou-Linux-${{ steps.version.outputs.version }}.rpm
-          if-no-files-found: error
-      - name: Upload AppImage Artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: MicYou-Linux-${{ steps.version.outputs.version }}-appimage
-          path: ci-artifacts/MicYou-Linux-${{ steps.version.outputs.version }}.AppImage
-          if-no-files-found: error
-
+  # Fork 说明：只发 Windows + 安卓，macOS/Linux 构建已删（上游恢复见 git 历史）。
   # ----------------- 发布 Release -----------------
   release:
-    needs: [build-tauri-windows, build-tauri-linux, build-tauri-macos]
+    needs: [build-tauri-windows, build-android]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -292,6 +153,10 @@ jobs:
         with:
           path: release-artifacts
           merge-multiple: true
+      - name: Include WinUHID 2.15 driver package
+        run: |
+          cp tauri-app/src-tauri/assets/winuhid/WinUHid_Win10_2.15.zip release-artifacts/
+          ls -la release-artifacts/
       - name: Get Last Contributor
         id: contributor
         run: |

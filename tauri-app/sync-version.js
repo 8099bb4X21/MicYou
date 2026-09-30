@@ -29,6 +29,12 @@ function toSemver(version) {
   if (match) {
     const [, major, minor, patch, pre] = match;
     if (pre && pre.length > 0) {
+      // 构建元数据（+voice）原样保留：cargo/npm/tauri 匹配版本时忽略它，
+      // 不会像 -voice 预发布后缀那样破坏 workspace 内 ^x.y.z 依赖解析。
+      if (pre.startsWith('+')) {
+        const cleanBuild = pre.slice(1).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        return cleanBuild ? `${major}.${minor}.${patch}+${cleanBuild}` : `${major}.${minor}.${patch}`;
+      }
       const cleanPre = pre.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
       return `${major}.${minor}.${patch}-${cleanPre}`;
     }

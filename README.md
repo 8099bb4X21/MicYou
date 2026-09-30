@@ -1,107 +1,64 @@
 <div align="center">
-  
-  <h1>MicYou</h1>
-  
+
+  <h1>MicYou-voice</h1>
+
   <img src="./img/app_icon.png" width="128" height="128" />
 
   <br>
 
-  <a href="https://hellogithub.com/repository/LanRhyme/MicYou" target="_blank"><img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=14f1a7bc70dc4b3daa2b4668200286e3&claim_uid=9B3umTywnclH56q&theme=neutral" alt="Featured｜HelloGitHub" style="width: 250px; height: 54px;" width="250" height="54" /></a>
- <a href="https://trendshift.io/repositories/25451" target="_blank"><img src="https://trendshift.io/api/badge/repositories/25451" alt="LanRhyme%2FMicYou | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-
-  <a href="./README_zh-cn.md">简体中文</a> | <a href="./README_zh-tw.md">繁體中文</a> | <b>English</b>
-
-  <a href="https://aur.archlinux.org/packages/micyou-bin"><img alt="AUR Version" src="https://img.shields.io/aur/version/micyou-bin?logo=archlinux&label=micyou-bin"></a>
-  <a href="https://qm.qq.com/q/V16hPpWPKO"><img alt="QQ" src="https://img.shields.io/badge/QQ-995452107-12B7F5?style=flat&logo=qq&logoColor=white"></a>
-  <a href="https://t.me/MicYouChannel"><img alt="TG" src="https://img.shields.io/badge/Telegram-@MicYouChannel-2CA5E0?style=flat&logo=telegram&logoColor=white"></a>
-
-  <h6>Support Me</h6>
-
-  <a href="https://afdian.com/a/LanRhyme" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/afdian-@LanRhyme-946ce6?style=for-the-badge&logo=afdian&logoColor=white" alt="afdian"></a>
-
-  MicYou turns your phone into a high-quality microphone for your PC.
-
-  Native Android client · Windows / Linux / macOS desktop server · Wi-Fi / USB / Web
+  MicYou 语音输入法适配版：把手机变成 PC 的高品质麦克风，
+  并用手机按键直接控制电脑上的语音输入。
 
 </div>
 
-## Features
+## 声明
 
-- Stream from the Android app over Wi-Fi or USB (ADB), or use Web mode directly from a mobile browser by scanning a QR code.
-- Run the desktop server on Windows, Linux, and macOS with a full GUI, a low-overhead CLI, or an interactive TUI dashboard.
-- Configure a processing pipeline with AI and traditional noise suppression, acoustic echo cancellation (AEC), dereverberation, equalizer, amplification, automatic gain control (AGC), and voice activity detection (VAD).
-- Inspect audio level, bitrate, latency, jitter, packet loss, and buffer status; mute or monitor incoming audio at any time.
-- Route audio through VB-CABLE on Windows, PipeWire on Linux, or BlackHole on macOS for use in calls, games, streaming, and recording apps.
-- Customize Material 3 interfaces with light/dark themes, dynamic colors, custom backgrounds, desktop pocket mode, system tray controls, and multiple languages.
-- Share connection, DSP, language, and theme preferences between the desktop GUI, CLI, and TUI.
+- 本仓库基于上游 [LanRhyme/MicYou](https://github.com/LanRhyme/MicYou) v2.0.3 构建。
+- 除下面列出的改动外，所有功能、文档与使用方式**以上游仓库为准**。
+- 感谢 LanRhyme 及上游所有贡献者的开源工作。
+- 本 fork 只提供 **Windows 桌面端＋安卓 APK**，不提供 macOS / Linux 包。
+- 语言只修改了英语和简体中文，其他语言缺失的文案会自动回退显示英文。
 
-## Screenshots
+## 为适配语音输入法做了哪些改动
 
-### Android App
+### Windows 端
 
-|                        Main Screen                        |                           Settings                            |
-|:---------------------------------------------------------:|:-------------------------------------------------------------:|
-| <img src="img/android_screenshot_main.png" width="300" /> | <img src="img/android_screenshot_settings.png" width="300" /> |
+- **远程按键注入**：收到手机发来的按键后，经 WinUHID 虚拟键盘注入电脑
+  （右 Alt、右 Alt＋空格、回车，或自定义组合键）。
+  没有驱动时直接弹窗引导安装，不做兼容性差的替代注入。
+- **悬浮窗**：置顶迷你控制台，点击不抢走其他程序的焦点；
+  单击 / 双击动作可在设置里配置，还能给单击、双击各配不同的发送按键；
+  右键菜单：显示 / 启停 / CLI / TUI / 退出。
+- **双向唤醒**：电脑端常驻监听，启动服务时顺手唤醒手机。
+- **窗口位置记忆**：主窗口和悬浮窗下次打开回到上次的位置。
 
-### Desktop App
+### 安卓端
 
-|                         Main Screen                          |                              Settings                               |
-|:------------------------------------------------------------:|:-------------------------------------------------------------------:|
-| <img src="img/desktop_screenshot.png" width="480" /> | <img src="img/desktop_screenshot_settings.png" width="480" /> |
+- **底部远程按键**：主页底部新增按键，按住即按下、松开即松开，
+  可发右 Alt、右 Alt＋空格、回车等组合键。
+- **音量键组合键**：前台使用时，音量上 / 下可各配一组发送按键
+  （默认上＝右 Alt＋空格，下＝回车）。
+- **双向唤醒**：收到电脑的唤醒包后自动开始连接。
+- **主页更紧凑**：连接状态和开始 / 停止按钮同排显示；
+  连接断开只提示"远程设备断开连接"。
 
-## Getting Started
+## 无解问题
 
-1. Download the Android APK and the desktop package for your operating system from [GitHub Releases](https://github.com/LanRhyme/MicYou/releases).
-2. Set up a virtual microphone for your platform by following the [Quick Start guide](https://micyou.top/en/docs/quick-start).
-3. Choose a connection method:
-   - Wi-Fi: Keep the phone and PC on the same network, then select Wi-Fi on both apps.
-   - USB: Enable USB debugging, connect the phone with a data cable, then select USB on both apps.
-   - Web: Select Web on the desktop and scan the QR code with a mobile browser—no Android app is required.
-4. Start streaming, then select the configured virtual microphone in your call, game, streaming, or recording app.
+- 灭屏时按音量键，系统直接调音量，不分发按键事件，不支持改键。
 
-For platform-specific installation steps and troubleshooting, visit the [MicYou documentation](https://micyou.top/en/docs/quick-start).
+## 下载安装
 
-## Technology
-
-- Android: Kotlin, Jetpack Compose, Material 3
-- Desktop: Tauri 2, Rust, Vue 3, Vite, Tailwind CSS
-- Protocol and audio: A Rust backend and shared crates for transport, buffering, DSP, and virtual audio device integration
-
-## Contributing
-
-We welcome contributions of all kinds! Whether you want to report a bug, suggest a feature, help with translations, or contribute code, please check our [Contributing Guidelines](./CONTRIBUTING.md) to get started.
-
-## Contributors
-
-<a href="https://github.com/LanRhyme/MicYou/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=LanRhyme/MicYou" />
-</a>
-
-Made with [contrib.rocks](https://contrib.rocks).
-
-## Star History
-
-<a href="https://star-history.dera.page/#LanRhyme/MicYou&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://star-history.dera.page/svg?repos=LanRhyme/MicYou&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://star-history.dera.page/svg?repos=LanRhyme/MicYou&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://star-history.dera.page/svg?repos=LanRhyme/MicYou&type=date&legend=top-left" />
- </picture>
-</a>
-
-## Acknowledgments
-
-Special thanks to [a2heng](https://github.com/a2heng) for open-sourcing [AEC7](https://github.com/a2heng/lightweight-aec-48k) and [PureVox](https://github.com/a2heng/lightweight-denoise-48k), which power MicYou's acoustic echo cancellation and AI noise suppression.
-
-Special thanks to [HeRNET Open Source Software Mirror](https://mirrors.ha.edu.cn/) for providing a mirror download service for this project.
-
-Special thanks to [CQU Open Source Software Mirror](https://mirrors.cqu.edu.cn/) for your consistent support in the past.
-
-Special thanks to [MirrorChyan](https://mirrorchyan.com/en/get-start) for providing a high-speed mirror download service for this project.
-
-Special thanks to all the [contributors](https://github.com/LanRhyme/MicYou/graphs/contributors) for helping to make the project even better.
+1. 从本仓库 [Releases](https://github.com/8099bb4X21/MicYou/releases) 下载：
+   `MicYou-Android-2.0.3+voice.apk`、`MicYou-Win-2.0.3+voice-installer.exe`，
+   Win10 19045 用户再下载 `WinUHid_Win10_2.15.zip`。
+2. 手机装 APK，电脑装 Windows 包，按上游文档配好虚拟麦（VB-CABLE）。
+3. 同一 Wi-Fi 下选 Wi-Fi 模式，或开 USB 调试连线后选 USB 模式，点开始即可。
+4. 驱动说明：
+   - 首次用远程按键时，按弹窗指引把 `WinUHid.dll` 导入到 `%APPDATA%\micyou`。
+   - Win10 19045 须先装 UMDF 2.15 版 WinUHID 驱动（见本仓库 Release 附件，开箱即用）。
+   - 其他 Windows 版本用官方 2.33 驱动即可，下载地址：
+     [Voice_VibeCoding Releases](https://github.com/mwlt/Voice_VibeCoding/releases)。
 
 ## License
 
-This project is licensed under the [GNU General Public License v3.0 with MicYou Plugin Exception](./LICENSE)
-
+同上游：[GNU General Public License v3.0 with MicYou Plugin Exception](./LICENSE)
