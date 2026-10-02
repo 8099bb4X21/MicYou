@@ -164,12 +164,8 @@ jobs:
       - name: Determine Tag Name
         id: tag
         run: |
-          if [ "${{ github.event_name }}" = "push" ] && [ -n "${{ github.ref_name }}" ]; then
-            TAG_NAME="${{ github.ref_name }}"
-          else
-            VERSION=$(grep "project.version=" gradle.properties | cut -d'=' -f2)
-            TAG_NAME="v$VERSION"
-          fi
+          # 手动发布：标签 = 编译日期(北京时间) + _voice，如 20261002_voice
+          TAG_NAME="$(TZ=Asia/Shanghai date +%Y%m%d)_voice"
           echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
           echo "Using tag: $TAG_NAME"
       - name: Create Tag (if not exists)
