@@ -1,6 +1,6 @@
 /*
  * MicYou — Turns your Android device into a high-quality PC microphone.
- * Copyright (C) 2026 LanRhyme <https://github.com/LanRhyme/MicYou>
+ * Copyright (C) 2026 LanRhyme <https://github.com/MicYou-Dev/MicYou>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,9 +34,6 @@ pub struct TrayMenuStrings {
     pub switch_cli: String,
     #[serde(default)]
     pub switch_tui: String,
-    /// 悬浮窗显隐切换。
-    #[serde(default)]
-    pub floating: String,
 }
 
 impl TrayMenuStrings {
@@ -50,7 +47,6 @@ impl TrayMenuStrings {
             exit: "Exit".to_string(),
             switch_cli: "Switch to CLI Mode".to_string(),
             switch_tui: "Switch to TUI Mode".to_string(),
-            floating: "Floating Window".to_string(),
         }
     }
 }
@@ -86,7 +82,6 @@ pub const MENU_ID_TOGGLE_STREAM: &str = "toggle_stream";
 pub const MENU_ID_EXIT: &str = "exit";
 pub const MENU_ID_SWITCH_CLI: &str = "switch_cli";
 pub const MENU_ID_SWITCH_TUI: &str = "switch_tui";
-pub const MENU_ID_FLOATING: &str = "floating";
 
 pub struct TrayContext {
     pub strings: Mutex<TrayMenuStrings>,
@@ -131,11 +126,6 @@ pub fn build_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
                 | MENU_ID_SWITCH_CLI
                 | MENU_ID_SWITCH_TUI => {
                     let _ = app.emit("tray-action", id);
-                }
-                MENU_ID_FLOATING => {
-                    if let Err(e) = crate::commands::toggle_floating_window_for(app) {
-                        log::warn!(target: "tray", "toggle floating window failed: {e}");
-                    }
                 }
                 other => {
                     log::warn!(target: "tray", "unknown menu id: {other}");
@@ -207,13 +197,6 @@ fn build_menu<R: Runtime>(
         true,
         None::<&str>,
     )?;
-    let floating = MenuItem::with_id(
-        app,
-        MENU_ID_FLOATING,
-        &strings.floating,
-        true,
-        None::<&str>,
-    )?;
     let exit = MenuItem::with_id(app, MENU_ID_EXIT, &strings.exit, true, None::<&str>)?;
     let separator = PredefinedMenuItem::separator(app)?;
     Menu::with_items(
@@ -221,7 +204,6 @@ fn build_menu<R: Runtime>(
         &[
             &show_hide,
             &toggle_stream,
-            &floating,
             &separator,
             &switch_cli,
             &switch_tui,
@@ -245,7 +227,6 @@ mod tests {
             exit: "Exit".into(),
             switch_cli: "Switch".into(),
             switch_tui: "Switch TUI".into(),
-            floating: "Floating".into(),
         }
     }
 

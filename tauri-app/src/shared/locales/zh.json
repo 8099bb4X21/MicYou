@@ -420,8 +420,7 @@
     "stop": "停止推流",
     "exit": "退出",
     "switchCli": "切换到 CLI 模式",
-    "switchTui": "切换到 TUI 模式",
-    "floating": "悬浮窗"
+    "switchTui": "切换到 TUI 模式"
   },
   "closeConfirm": {
     "title": "关闭 MicYou",

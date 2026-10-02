@@ -1,13 +1,6 @@
 name: Pre-release Build
 
 on:
-  push:
-    tags:
-      - 'v*-alpha*'
-      - 'v*-beta*'
-      - 'v*-rc*'
-      - 'v*-pre*'
-      - 'v*-preview*'
   workflow_dispatch:
 
 permissions:

@@ -4,8 +4,6 @@ name: Feature Test Build (signed)
 # 产物：自签名安卓Release APK + Windows安装包，文件名带remote-key后缀以区别官方版本。
 
 on:
-  push:
-    branches: ["feature/remote-key"]
   workflow_dispatch:
 
 jobs:
