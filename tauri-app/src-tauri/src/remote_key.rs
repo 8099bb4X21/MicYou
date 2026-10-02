@@ -128,6 +128,16 @@ fn dll_candidates() -> Vec<PathBuf> {
     if let Some(p) = imported_dll_path() {
         out.push(p);
     }
+    // 驱动安装脚本（WinUHid 2.15/2.23 包）会把 WinUHid.dll 释放到这里，主动复用免手动导入。
+    #[cfg(target_os = "windows")]
+    if let Ok(localappdata) = std::env::var("LOCALAPPDATA") {
+        out.push(
+            PathBuf::from(localappdata)
+                .join("com.remote-bridge-hub.app")
+                .join("winuhid")
+                .join("WinUHid.dll"),
+        );
+    }
     if let Ok(exe) = std::env::current_exe() {
         if let Some(dir) = exe.parent() {
             out.push(dir.join("WinUHid.dll"));
