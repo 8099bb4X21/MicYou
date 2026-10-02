@@ -49,26 +49,23 @@
 ## 下载安装
 
 1. 从本仓库 [Releases](https://github.com/8099bb4X21/MicYou/releases) 下载：
-   `MicYou-Android-2.0.3+voice.apk`、`MicYou-Win-2.0.3+voice-installer.exe`。
+   `MicYou-Android-<日期>-voice.apk`、`MicYou-Win-<日期>-voice-installer.exe`
+   （`<日期>` 为构建日期，如 `20261002`）。
 2. 手机装 APK，电脑装 Windows 包，按上游文档配好虚拟麦（VB-CABLE）。
 3. 同一 Wi-Fi 下选 Wi-Fi 模式，或开 USB 调试连线后选 USB 模式，点开始即可。
-4. 远程按键需要两步：装 WinUHID 驱动 + 导入 `WinUHid.dll`。
-
-   **① 装驱动**（按系统选一个）：
+4. 远程按键需要装 WinUHID 驱动（新版 MicYou 会自动找到 `WinUHid.dll`，无需手动导入）：
 
    | 驱动包 | UMDF | 适用系统 | 下载 |
    |---|---|---|---|
    | `WinUHid_Win10_2.15.zip` | 2.15 | Windows 10 1507 及以上 / Windows 11 | 本仓库 Release 附件 |
    | `WinUHid_Win10_2.23.zip` | 2.23 | Windows 10 1709 及以上 / Windows 11 | [8099bb4X21/WinUHid](https://github.com/8099bb4X21/WinUHid) 的 Release |
-   | 官方 2.33 | 2.33 | 仅 Windows 11 21H2 及以上 | [Voice_VibeCoding Releases](https://github.com/mwlt/Voice_VibeCoding/releases) |
+   | Voice_VibeCoding 编译的 2.33 | 2.33 | 仅 Windows 11 21H2 及以上 | [Voice_VibeCoding Releases](https://github.com/mwlt/Voice_VibeCoding/releases) |
 
    装法：解压 → 右键 `Run-Install.cmd` 以管理员身份运行 → 双击 `Run-Status.cmd` 看到 `device reachable`。
-
-   **② 导入 WinUHid.dll**（每一版驱动都需要这一步）：
-   首次用远程按键时 MicYou 会弹窗，选中驱动包里的 `WinUHid.dll` 即可
-   （它会复制到 `%APPDATA%\micyou\WinUHid.dll`）。
-   > 说明：驱动安装脚本会把 `WinUHid.dll` 释放到它自己的目录
-   > （`%LOCALAPPDATA%\com.remote-bridge-hub.app\winuhid`），MicYou 不会去那里找，所以这一步不能省。
+   > 三版驱动的安装脚本都会把 `WinUHid.dll` 释放到
+   > `%LOCALAPPDATA%\com.remote-bridge-hub.app\winuhid`，新版 MicYou 会自动从那里加载。
+   > 仅当驱动已装好、远程按键仍提示缺 DLL 时，才在弹窗里手动选中驱动包中的
+   > `WinUHid.dll`（会复制到 `%APPDATA%\micyou\WinUHid.dll`）。
 
 ## License
 

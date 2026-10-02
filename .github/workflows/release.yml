@@ -64,12 +64,13 @@ jobs:
             echo "No release APK found, skipping"
             exit 0
           fi
-          cp "$APK" "ci-artifacts/MicYou-Android-${{ steps.version.outputs.version }}.apk"
+          DATE=$(TZ=Asia/Shanghai date +%Y%m%d)
+          cp "$APK" "ci-artifacts/MicYou-Android-${DATE}-voice.apk"
       - name: Upload Android Artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: MicYou-Android-${{ steps.version.outputs.version }}
-          path: ci-artifacts/MicYou-Android-${{ steps.version.outputs.version }}.apk
+          name: MicYou-Android
+          path: ci-artifacts/MicYou-Android-*-voice.apk
           if-no-files-found: ignore
 
   # ----------------- Tauri Windows 构建 -----------------
@@ -117,18 +118,18 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path ci-artifacts | Out-Null
-          $version = '${{ steps.version.outputs.version }}'
+          $date = [System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId((Get-Date), 'China Standard Time').ToString('yyyyMMdd')
           $installer = Get-ChildItem -Path tauri-app/src-tauri/target/release/bundle/inno -Filter *.exe -ErrorAction SilentlyContinue | Select-Object -First 1
           if (-not $installer) {
             Write-Warning "No installer found, skipping artifact upload"
             exit 0
           }
-          Copy-Item $installer.FullName "ci-artifacts/MicYou-Win-$version-installer.exe" -Force
+          Copy-Item $installer.FullName "ci-artifacts/MicYou-Win-$date-voice-installer.exe" -Force
       - name: Upload Artifact
         uses: actions/upload-artifact@v7
         with:
-          name: MicYou-Win-${{ steps.version.outputs.version }}
-          path: ci-artifacts/MicYou-Win-${{ steps.version.outputs.version }}-installer.exe
+          name: MicYou-Win
+          path: ci-artifacts/MicYou-Win-*-voice-installer.exe
           if-no-files-found: ignore
 
   # Fork 说明：只发 Windows + 安卓，macOS/Linux 构建已删（上游恢复见 git 历史）。
