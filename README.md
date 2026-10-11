@@ -27,7 +27,7 @@
 
 ## Features
 
-- Stream from the Android app over Wi-Fi or USB (ADB), from the [iOS app](https://github.com/MicYou-Dev/MicYou-iOS) over Wi-Fi, or use Web mode directly from a mobile browser by scanning a QR code.
+- Stream from the Android app over Wi-Fi or USB (ADB), from the [iOS app](https://github.com/MicYou-Dev/MicYou-iOS) over Wi-Fi or USB, or use Web mode directly from a mobile browser by scanning a QR code.
 - Run the desktop server on Windows, Linux, and macOS with a full GUI, a low-overhead CLI, or an interactive TUI dashboard.
 - Configure a processing pipeline with AI and traditional noise suppression, acoustic echo cancellation (AEC), dereverberation, equalizer, amplification, automatic gain control (AGC), and voice activity detection (VAD).
 - Inspect audio level, bitrate, latency, jitter, packet loss, and buffer status; mute or monitor incoming audio at any time.
@@ -56,7 +56,7 @@
 2. Set up a virtual microphone for your platform by following the [Quick Start guide](https://micyou.top/en/docs/quick-start).
 3. Choose a connection method:
    - Wi-Fi: Keep the phone and PC on the same network, then select Wi-Fi on the desktop. The Android app connects after you select Wi-Fi; the iOS app finds the computer automatically, or you can enter its IP address.
-   - USB (Android only): Enable USB debugging, connect the phone with a data cable, then select USB on both apps.
+   - USB: Connect the phone with a data cable and select USB on the desktop. On Android, enable USB debugging and select USB in the app; on iOS, choose USB Cable in the app (Windows needs iTunes installed).
    - Web: Select Web on the desktop and scan the QR code with a mobile browser—no app is required.
 4. Start streaming, then select the configured virtual microphone in your call, game, streaming, or recording app.
 

@@ -27,7 +27,7 @@
 
 ## 主要功能
 
-- Android 客戶端支援 Wi-Fi 與 USB (ADB)，[iOS 客戶端](https://github.com/MicYou-Dev/MicYou-iOS)支援 Wi-Fi；Web 模式可透過 QR Code 直接連接手機瀏覽器，無需安裝客戶端
+- Android 客戶端支援 Wi-Fi 與 USB (ADB)，[iOS 客戶端](https://github.com/MicYou-Dev/MicYou-iOS)支援 Wi-Fi 與 USB；Web 模式可透過 QR Code 直接連接手機瀏覽器，無需安裝客戶端
 - 桌面端支援 Windows、Linux 與 macOS，並提供完整 GUI、低資源占用 CLI 及互動式 TUI 儀表板
 - 可設定包含 AI 與傳統降噪、聲學回聲消除 (AEC)、去混響、等化器、放大、自動增益控制 (AGC) 及語音活動偵測 (VAD) 的音訊處理鏈
 - 可即時查看音量、位元率、延遲、抖動、封包遺失率及緩衝區狀態，並隨時靜音或監聽輸入音訊
@@ -54,7 +54,7 @@
 2. 按照[快速開始指南](https://micyou.top/zh-TW/docs/quick-start)為電腦設定虛擬麥克風
 3. 選擇連線方式：
    - Wi-Fi：確保手機與電腦位於同一網路，並在桌面端選擇 Wi-Fi 模式；Android 客戶端同樣選擇 Wi-Fi 模式，iOS 客戶端會自動搜尋到電腦，也可以手動輸入 IP 位址
-   - USB（僅 Android）：啟用 USB 偵錯，透過資料線連接手機，並在兩端選擇 USB 模式
+   - USB：透過資料線連接手機，並在桌面端選擇 USB 模式；Android 需啟用 USB 偵錯並在客戶端選擇 USB 模式，iOS 在客戶端選擇「USB 傳輸線」（Windows 需安裝 iTunes）
    - Web：在桌面端選擇 Web 模式，再用手機瀏覽器掃描 QR Code，無需安裝客戶端
 4. 啟動音訊傳輸，然後在通話、遊戲、直播或錄音軟體中選擇已設定的虛擬麥克風
 

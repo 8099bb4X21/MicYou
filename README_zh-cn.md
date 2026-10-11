@@ -28,7 +28,7 @@
 
 ## 主要功能
 
-- Android 客户端支持 Wi-Fi 和 USB (ADB)，[iOS 客户端](https://github.com/MicYou-Dev/MicYou-iOS)支持 Wi-Fi；Web 模式可通过二维码直接连接手机浏览器，无需安装客户端
+- Android 客户端支持 Wi-Fi 和 USB (ADB)，[iOS 客户端](https://github.com/MicYou-Dev/MicYou-iOS)支持 Wi-Fi 和 USB；Web 模式可通过二维码直接连接手机浏览器，无需安装客户端
 - 桌面端支持 Windows、Linux 和 macOS，并提供完整 GUI、低占用 CLI 与交互式 TUI 仪表盘
 - 可配置包含 AI 与传统降噪、声学回声消除 (AEC)、去混响、均衡器、放大、自动增益控制 (AGC) 和语音活动检测 (VAD) 的音频处理链
 - 可实时查看音量、比特率、延迟、抖动、丢包率和缓冲区状态，并随时静音或监听输入音频
@@ -55,7 +55,7 @@
 2. 按照[快速开始指南](https://micyou.top/docs/quick-start)为电脑配置虚拟麦克风
 3. 选择连接方式：
    - Wi-Fi：确保手机与电脑处于同一网络，并在桌面端选择 Wi-Fi 模式；Android 客户端同样选择 Wi-Fi 模式，iOS 客户端会自动搜索到电脑，也可以手动输入 IP 地址
-   - USB（仅 Android）：启用 USB 调试，通过数据线连接手机，并在两端选择 USB 模式
+   - USB：通过数据线连接手机，并在桌面端选择 USB 模式；Android 需启用 USB 调试并在客户端选择 USB 模式，iOS 在客户端选择“USB 数据线”（Windows 需安装 iTunes）
    - Web：在桌面端选择 Web 模式，再用手机浏览器扫描二维码，无需安装客户端
 4. 启动音频传输，然后在通话、游戏、直播或录音软件中选择已配置的虚拟麦克风
 
