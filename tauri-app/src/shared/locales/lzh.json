@@ -10,7 +10,9 @@
       "connecting": "恭候装置中...",
       "starting": "正启服务...",
       "ready": "已备矣",
-      "streamingDesc": "安卓装置已通矣。",
+      "streamingDesc": "装置已通矣。",
+      "streamingDescAndroid": "安卓装置已通矣。",
+      "streamingDescIos": "iOS 装置已通矣。",
       "connectingDesc": "监听端口 {port} 中",
       "startingDesc": "音频服务正始化，且稍候。",
       "readyDesc": "点启以候连接。",
@@ -279,7 +281,7 @@
       "copied": "已誊",
       "exportLog": "出日志牍",
       "introTitle": "简介",
-      "introText": "MicYou 者，开源麦克风之具也。可使安卓装置变为电脑之高品质麦克风，以 Wi-Fi 或 USB 相连，音频传输延迟极低。"
+      "introText": "MicYou 者，开源麦克风之具也。可使安卓或 iOS 装置变为电脑之高品质麦克风，以 Wi-Fi 或 USB 相连，音频传输延迟极低。"
     },
     "runMode": {
       "title": "运行模式",
@@ -534,7 +536,7 @@
   },
   "onboarding": {
     "title": "迎用 MicYou",
-    "desc": "此应用可使安卓装置变为电脑之高品质麦克风，以 Wi-Fi 或 USB 相连。",
+    "desc": "此应用可使安卓或 iOS 装置变为电脑之高品质麦克风，以 Wi-Fi 或 USB 相连。",
     "quickStart": "速启指南",
     "step1Title": "一、装桌面应用",
     "step1Desc": "于电脑下载并装 MicYou",

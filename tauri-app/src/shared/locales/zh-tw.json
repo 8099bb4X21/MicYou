@@ -10,7 +10,9 @@
       "connecting": "等待裝置連線...",
       "starting": "服務啟動中...",
       "ready": "準備就緒",
-      "streamingDesc": "已成功連線至 Android 裝置",
+      "streamingDesc": "已成功連線至裝置",
+      "streamingDescAndroid": "已成功連線至 Android 裝置",
+      "streamingDescIos": "已成功連線至 iOS 裝置",
       "connectingDesc": "正在監聽連接埠 {port}",
       "startingDesc": "正在初始化音訊服務，請稍候",
       "readyDesc": "點擊開始以等待連線",
@@ -279,7 +281,7 @@
       "copied": "已複製",
       "exportLog": "匯出紀錄",
       "introTitle": "軟體介紹",
-      "introText": "MicYou 是一款開源的麥克風工具，可以將您的 Android 裝置變成電腦的高品質麥克風，支援 Wi-Fi 和 USB 連線，提供低延遲的音訊傳輸體驗"
+      "introText": "MicYou 是一款開源的麥克風工具，可以將您的 Android 或 iOS 裝置變成電腦的高品質麥克風，支援 Wi-Fi 和 USB 連線，提供低延遲的音訊傳輸體驗"
     },
     "runMode": {
       "title": "執行模式",
@@ -534,7 +536,7 @@
   },
   "onboarding": {
     "title": "歡迎使用 MicYou",
-    "desc": "本應用可以將您的 Android 裝置透過 Wi-Fi 或 USB 變成電腦的高品質麥克風",
+    "desc": "本應用可以將您的 Android 或 iOS 裝置透過 Wi-Fi 或 USB 變成電腦的高品質麥克風",
     "quickStart": "快速入門指南",
     "step1Title": "1. 安裝桌面應用程式",
     "step1Desc": "在電腦上下載並安裝 MicYou 桌面應用程式",

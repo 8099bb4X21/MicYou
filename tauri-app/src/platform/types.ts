@@ -13,10 +13,21 @@ export interface ServerPrefs {
   muteSync: boolean;
 }
 
+/** Platform the phone reported when it connected; `unknown` for clients that predate the field. */
+export type ClientPlatform = 'android' | 'ios' | 'unknown';
+
 export interface StreamingStatus {
   isServerRunning: boolean;
   isConnected: boolean;
   isMuted: boolean;
+  platform: ClientPlatform;
+}
+
+export interface DeviceInfo {
+  name: string;
+  ip: string;
+  latency: number;
+  platform: ClientPlatform;
 }
 
 export interface NetworkInfo {

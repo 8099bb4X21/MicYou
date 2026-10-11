@@ -10,7 +10,9 @@
       "connecting": "等緊裝置...",
       "starting": "服務啟動緊...",
       "ready": "準備就緒",
-      "streamingDesc": "已經成功連接 Android 裝置",
+      "streamingDesc": "已經成功連接裝置",
+      "streamingDescAndroid": "已經成功連接 Android 裝置",
+      "streamingDescIos": "已經成功連接 iOS 裝置",
       "connectingDesc": "喺埠口 {port} 度監聽緊",
       "startingDesc": "初始化緊音訊服務，請等吓",
       "readyDesc": "㩒開始掣等連線",
@@ -279,7 +281,7 @@
       "copied": "已複製",
       "exportLog": "匯出日誌",
       "introTitle": "軟件介紹",
-      "introText": "MicYou 係一個開源嘅咪高峰工具，可以將你嘅 Android 裝置變做電腦嘅高質素咪高峰，支援 Wi-Fi (TCP) 同 USB 連線，畀到低延遲嘅音訊傳輸體驗"
+      "introText": "MicYou 係一個開源嘅咪高峰工具，可以將你嘅 Android 或者 iOS 裝置變做電腦嘅高質素咪高峰，支援 Wi-Fi (TCP) 同 USB 連線，畀到低延遲嘅音訊傳輸體驗"
     },
     "runMode": {
       "title": "運行模式",
@@ -534,7 +536,7 @@
   },
   "onboarding": {
     "title": "歡迎使用 MicYou",
-    "desc": "您好似係第一次使用 MicYou，呢個 App 可以將你嘅 Android 裝置透過 Wi-Fi 或者 USB 變做電腦嘅高質量咪高峰",
+    "desc": "您好似係第一次使用 MicYou，呢個 App 可以將你嘅 Android 或者 iOS 裝置透過 Wi-Fi 或者 USB 變做電腦嘅高質量咪高峰",
     "quickStart": "快速入門指南",
     "step1Title": "1. 安裝桌面應用程式",
     "step1Desc": "喺電腦下載同安裝 MicYou 桌面應用程式",

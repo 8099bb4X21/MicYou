@@ -60,6 +60,7 @@ pub struct ActiveConnection {
     pub raw_socket: RawSocketHandle,
     pub connection_id: u64,
     pub takeover_token: CancellationToken,
+    pub platform: ClientPlatform,
 }
 
 pub type SharedActiveConnection = Arc<Mutex<Option<ActiveConnection>>>;
@@ -97,6 +98,37 @@ pub struct DeviceInfo {
     pub name: String,
     pub ip: String,
     pub latency: u32,
+    pub platform: ClientPlatform,
+}
+
+/// Platform the phone reports in its Connect message, normalized at the wire boundary.
+#[derive(Serialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ClientPlatform {
+    Android,
+    Ios,
+    /// Clients that predate the field (every Android release before it) or send an unknown value.
+    #[default]
+    Unknown,
+}
+
+impl ClientPlatform {
+    pub fn from_wire(value: &str) -> Self {
+        match value {
+            "android" => Self::Android,
+            "ios" => Self::Ios,
+            _ => Self::Unknown,
+        }
+    }
+
+    /// Label shown by the CLI and TUI and passed to plugins.
+    pub fn device_label(self) -> &'static str {
+        match self {
+            Self::Android => "MicYou Android",
+            Self::Ios => "MicYou iOS",
+            Self::Unknown => "MicYou Mobile",
+        }
+    }
 }
 
 pub struct TcpServerConfig {
@@ -483,6 +515,12 @@ async fn handle_client(
         Some(connect) => ExpectedAudioSession::Bound(connect.session_id),
         None => ExpectedAudioSession::UnboundLegacy,
     };
+    let platform = first_message
+        .connect
+        .as_ref()
+        .map_or(ClientPlatform::Unknown, |connect| {
+            ClientPlatform::from_wire(&connect.platform)
+        });
 
     #[cfg(windows)]
     let raw: RawSocketHandle = std::os::windows::io::AsRawSocket::as_raw_socket(&socket);
@@ -511,6 +549,7 @@ async fn handle_client(
             raw_socket: raw,
             connection_id,
             takeover_token: takeover_token.clone(),
+            platform,
         });
         if let Some(old) = old.as_ref() {
             old.takeover_token.cancel();
@@ -552,11 +591,12 @@ async fn handle_client(
     drop(old);
     drop(_takeover_guard);
 
-    log::info!("Handshake successful with {}", addr);
+    log::info!("Handshake successful with {} ({:?})", addr, platform);
     let device_info = DeviceInfo {
-        name: "MicYou Mobile".to_string(),
+        name: platform.device_label().to_string(),
         ip: addr.ip().to_string(),
         latency: 12,
+        platform,
     };
     let current_time = crate::stats::unix_millis();
     if is_active(&active_connection, &takeover_token, connection_id).await {
@@ -837,6 +877,31 @@ mod tests {
     }
 
     #[test]
+    fn connect_platform_is_normalized() {
+        use micyou_protocol::micyou::ConnectMessage;
+
+        let decode = |connect: ConnectMessage| {
+            let payload = MessageWrapper {
+                connect: Some(connect),
+                ..Default::default()
+            }
+            .encode_to_vec();
+            let wrapper = MessageWrapper::decode(payload.as_slice()).unwrap();
+            ClientPlatform::from_wire(&wrapper.connect.unwrap().platform)
+        };
+        let connect = |platform: &str| ConnectMessage {
+            session_id: 7,
+            platform: platform.to_string(),
+        };
+
+        assert_eq!(decode(connect("ios")), ClientPlatform::Ios);
+        assert_eq!(decode(connect("android")), ClientPlatform::Android);
+        // Legacy clients leave the field empty; unexpected values are not trusted.
+        assert_eq!(decode(connect("")), ClientPlatform::Unknown);
+        assert_eq!(decode(connect("iOS ")), ClientPlatform::Unknown);
+    }
+
+    #[test]
     fn frame_header_rejects_negative_payload_length() {
         assert_eq!(
             parse_frame_header(&header(-1)).unwrap_err().kind(),
@@ -871,6 +936,7 @@ mod tests {
             raw_socket: 0 as RawSocketHandle,
             connection_id: 1,
             takeover_token: token.clone(),
+            platform: ClientPlatform::Unknown,
         })));
         token.cancel();
         let side_effect_ran = Arc::new(std::sync::atomic::AtomicBool::new(false));
@@ -895,6 +961,7 @@ mod tests {
             raw_socket: raw,
             connection_id: 1,
             takeover_token: token.clone(),
+            platform: ClientPlatform::Unknown,
         })));
         let active_audio_session =
             Arc::new(std::sync::RwLock::new(ActiveAudioSession::UnboundLegacy {

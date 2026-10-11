@@ -72,6 +72,7 @@ import com.lanrhyme.micyou.audio.AndroidAudioSource
 import com.lanrhyme.micyou.audio.AudioLevelData
 import com.lanrhyme.micyou.network.AudioPacketMessage
 import com.lanrhyme.micyou.network.AudioPacketMessageOrdered
+import com.lanrhyme.micyou.network.CLIENT_PLATFORM
 import com.lanrhyme.micyou.network.CODEC_OPUS
 import com.lanrhyme.micyou.network.ConnectMessage
 import com.lanrhyme.micyou.network.HANDSHAKE_CLIENT
@@ -681,7 +682,7 @@ class AudioEngine constructor() {
                             Logger.i("AudioEngine", "Handshake successful")
                             val connectBytes = proto.encodeToByteArray(
                                 MessageWrapper.serializer(),
-                                MessageWrapper(connect = ConnectMessage(sessionId))
+                                MessageWrapper(connect = ConnectMessage(sessionId, CLIENT_PLATFORM))
                             )
                             out.writeInt(PACKET_MAGIC)
                             out.writeInt(connectBytes.size)

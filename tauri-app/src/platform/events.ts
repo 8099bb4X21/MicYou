@@ -1,11 +1,11 @@
 import { emitTo, listen, type UnlistenFn } from '@tauri-apps/api/event';
-import type { AecStatus, AudioMetrics, PluginDownloadProgress, SpectrumPayload } from './types';
+import type { AecStatus, AudioMetrics, DeviceInfo, PluginDownloadProgress, SpectrumPayload } from './types';
 
 export type { UnlistenFn };
 
 /** Events the backend (or another window) emits, with their payloads. */
 export interface AppEvents {
-  'device-connected': unknown;
+  'device-connected': DeviceInfo;
   'device-disconnected': unknown;
   'server-stopped': unknown;
   'audio-level': number;

@@ -90,6 +90,7 @@ pub struct StreamingStatus {
     pub is_server_running: bool,
     pub is_connected: bool,
     pub is_muted: bool,
+    pub platform: crate::transport::tcp::ClientPlatform,
 }
 
 /// Handles on the live server state that runtime controls act on.
@@ -258,7 +259,12 @@ impl ServerState {
             self.lifecycle.lock().await.phase(),
             crate::server::lifecycle::ServerLifecyclePhase::Running
         );
-        let control_connected = self.active_connection.lock().await.is_some();
+        let control_platform = self
+            .active_connection
+            .lock()
+            .await
+            .as_ref()
+            .map(|connection| connection.platform);
         let audio_active = !matches!(
             *self
                 .active_audio_session
@@ -278,8 +284,9 @@ impl ServerState {
 
         StreamingStatus {
             is_server_running,
-            is_connected: control_connected || audio_active || web_connected,
+            is_connected: control_platform.is_some() || audio_active || web_connected,
             is_muted: self.network_stats.is_muted(),
+            platform: control_platform.unwrap_or_default(),
         }
     }
 }
@@ -339,6 +346,7 @@ mod tests {
             raw_socket: Default::default(),
             connection_id: 1,
             takeover_token: CancellationToken::new(),
+            platform: Default::default(),
         });
 
         let busy = state.active_connection.lock().await;

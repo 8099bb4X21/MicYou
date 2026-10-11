@@ -11,6 +11,7 @@ import {
   notify,
   onEvent,
   type AdbDevice,
+  type ClientPlatform,
   type NetworkInfo,
   type NetworkInterfaceInfo,
 } from '@/platform';
@@ -98,6 +99,9 @@ export function useServer(options?: { audioLevel?: Ref<number>; isMuted?: Ref<bo
   const activeConnectionMode = ref<ConnectionMode | null>(null);
   const activePort = ref<number | null>(null);
 
+  // Platform of the connected phone, reported in its Connect message
+  const clientPlatform = ref<ClientPlatform>('unknown');
+
   // Computes the display representation of the active bind IP address
   const displayIp = computed(() => {
     if (isAutoBind.value) {
@@ -115,6 +119,8 @@ export function useServer(options?: { audioLevel?: Ref<number>; isMuted?: Ref<bo
       if (mode === 'web') {
         return t('app.web.clientsConnected', { count: webClientCount.value });
       }
+      if (clientPlatform.value === 'ios') return t('app.status.streamingDescIos');
+      if (clientPlatform.value === 'android') return t('app.status.streamingDescAndroid');
       return t('app.status.streamingDesc');
     }
     if (serverState.value === 'connecting') {
@@ -238,6 +244,7 @@ export function useServer(options?: { audioLevel?: Ref<number>; isMuted?: Ref<bo
       }
       const status = await command('get_streaming_status').catch(() => null);
       if (status?.isConnected) {
+        clientPlatform.value = status.platform;
         ensureStreamingState();
       } else if (serverState.value === 'starting') {
         serverState.value = 'connecting';
@@ -407,7 +414,10 @@ export function useServer(options?: { audioLevel?: Ref<number>; isMuted?: Ref<bo
   // happens while the window loads is missed.
   function listenToServer() {
     return Promise.all([
-      track(onEvent('device-connected', ensureStreamingState)),
+      track(onEvent('device-connected', (info) => {
+        clientPlatform.value = info.platform;
+        ensureStreamingState();
+      })),
       track(onEvent('device-disconnected', onDeviceDisconnected)),
       // Stops triggered elsewhere (tray, plugins, another window)
       track(onEvent('server-stopped', () => {
@@ -470,6 +480,7 @@ export function useServer(options?: { audioLevel?: Ref<number>; isMuted?: Ref<bo
       const status = await command('get_streaming_status');
       if (status.isServerRunning) {
         serverState.value = status.isConnected ? 'streaming' : 'connecting';
+        clientPlatform.value = status.platform;
         activeConnectionMode.value = connectionMode.value;
         activePort.value = portFor(connectionMode.value);
         if (options?.isMuted) {
