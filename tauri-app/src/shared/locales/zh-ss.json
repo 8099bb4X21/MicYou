@@ -521,6 +521,7 @@
       "checkAntivirus": "检查防毒或安全软体设定",
       "checkUsbCable": "检查通用串行总线式缆线连线",
       "enableUsbDebugging": "在安卓开发者选项中启用通用串行总线式侦错",
+      "connectIosOverUsb": "iPhone 或 iPad：打开 MicYou，电脑选择「USB 数据线」后点击连接；Windows 还需要安装 iTunes",
       "runAdbCommand": "在电脑上执行此指令：%s",
       "checkAdbInstalled": "确保电脑上已安装安卓调试桥接",
       "runAdbManually": "手动执行：%s",

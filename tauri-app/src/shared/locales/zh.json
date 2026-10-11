@@ -523,6 +523,7 @@
       "checkAntivirus": "检查防病毒或安全软件设置",
       "checkUsbCable": "检查 USB 线缆连接",
       "enableUsbDebugging": "在 Android 开发者选项中启用 USB 调试",
+      "connectIosOverUsb": "iPhone 或 iPad：打开 MicYou，电脑选择「USB 数据线」后点击连接；Windows 还需要安装 iTunes",
       "runAdbCommand": "在电脑上运行此命令：{cmd}",
       "checkAdbInstalled": "确保电脑上已安装 ADB",
       "runAdbManually": "手动运行：{cmd}",

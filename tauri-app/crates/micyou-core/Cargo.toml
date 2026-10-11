@@ -26,6 +26,7 @@ log.workspace = true
 md-5 = "0.10.6"
 mdns-sd = "0.21"
 opus-decoder = "0.1.1"
+plist = "1.10.1"
 prost.workspace = true
 reqwest.workspace = true
 semver.workspace = true

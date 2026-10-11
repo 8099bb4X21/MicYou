@@ -523,6 +523,7 @@
       "checkAntivirus": "Check antivirus or security software settings",
       "checkUsbCable": "Check USB cable connection",
       "enableUsbDebugging": "Enable USB debugging in Android developer options",
+      "connectIosOverUsb": "iPhone or iPad: open MicYou, choose USB Cable as the computer and tap Connect. Windows also needs iTunes installed",
       "runAdbCommand": "Run this command on PC: {cmd}",
       "checkAdbInstalled": "Ensure ADB is installed on your computer",
       "runAdbManually": "Manually run: {cmd}",

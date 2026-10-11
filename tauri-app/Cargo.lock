@@ -3535,6 +3535,7 @@ dependencies = [
  "notify-rust",
  "open",
  "opus-decoder",
+ "plist",
  "prost",
  "rcgen",
  "reqwest",

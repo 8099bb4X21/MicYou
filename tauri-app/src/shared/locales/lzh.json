@@ -521,6 +521,7 @@
       "checkAntivirus": "查安全软件设",
       "checkUsbCable": "查 USB 线",
       "enableUsbDebugging": "启 USB 调试",
+      "connectIosOverUsb": "iPhone 或 iPad：启 MicYou，择「USB」而连之；Windows 尚须装 iTunes",
       "runAdbCommand": "于电脑行此令：{cmd}",
       "checkAdbInstalled": "保已装 ADB",
       "runAdbManually": "手行：{cmd}",

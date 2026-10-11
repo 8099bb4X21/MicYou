@@ -234,7 +234,7 @@ export function useServer(options?: { audioLevel?: Ref<number>; isMuted?: Ref<bo
           return;
         }
         if (result.type === 'NoDevices') {
-          throw new Error('No USB devices found. Please connect a device and enable USB debugging.');
+          throw new Error('No USB devices found. Connect an Android device with USB debugging enabled, or an iPhone or iPad.');
         }
       }
       if (mode === 'web') {

@@ -521,6 +521,7 @@
       "checkAntivirus": "檢查防毒或安全軟體設定",
       "checkUsbCable": "檢查 USB 傳輸線連線",
       "enableUsbDebugging": "在 Android 開發人員選項中啟用 USB 偵錯",
+      "connectIosOverUsb": "iPhone 或 iPad：開啟 MicYou，電腦選擇「USB 傳輸線」後點選連線；Windows 還需要安裝 iTunes",
       "runAdbCommand": "在電腦上執行此指令：{cmd}",
       "checkAdbInstalled": "確保電腦上已安裝 ADB",
       "runAdbManually": "手動執行：{cmd}",
