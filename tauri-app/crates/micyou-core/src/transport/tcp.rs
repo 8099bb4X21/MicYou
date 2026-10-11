@@ -672,6 +672,7 @@ async fn handle_client(
                 }),
                 pong: None,
                 plugin_message: None,
+                stats: None,
             };
             if tx_ping.send(ping_msg).await.is_err() {
                 break;
@@ -681,13 +682,17 @@ async fn handle_client(
 
     let stats_emit = stats.clone();
     let events_emit = events.clone();
+    let tx_stats = tx.clone();
     let monitor_task = tokio::spawn(async move {
         let mut interval = tokio::time::interval(Duration::from_millis(1000));
         let mut warning_fired = false;
         loop {
             interval.tick().await;
             let buffer_duration = if mode == ConnectionMode::Usb { 5 } else { 30 };
-            events_emit.audio_metrics(stats_emit.to_metrics(buffer_duration));
+            let metrics = stats_emit.to_metrics(buffer_duration);
+            // Best effort: a full control queue only skips this second's report.
+            let _ = tx_stats.try_send(stats_message(&metrics));
+            events_emit.audio_metrics(metrics);
             if cfg!(target_os = "windows")
                 && mode == ConnectionMode::Wifi
                 && !warning_fired
@@ -765,6 +770,20 @@ async fn handle_client(
     reader_result
 }
 
+/// Link statistics for the phone, mirroring what the desktop UI shows.
+fn stats_message(metrics: &crate::stats::AudioMetrics) -> MessageWrapper {
+    let clamp = |value: i64| value.clamp(0, i32::MAX as i64) as i32;
+    MessageWrapper {
+        stats: Some(micyou_protocol::micyou::StatsMessage {
+            rtt_ms: clamp(metrics.network_latency_ms),
+            jitter_ms: metrics.jitter_ms as f32,
+            packet_loss: metrics.packet_loss_rate.clamp(0.0, 1.0) as f32,
+            latency_ms: clamp(metrics.latency_ms),
+        }),
+        ..Default::default()
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 async fn handle_message(
     msg: MessageWrapper,
@@ -816,6 +835,7 @@ async fn handle_message(
                 timestamp: ping.timestamp,
             }),
             plugin_message: None,
+            stats: None,
         };
         let permit = tokio::select! {
             biased;
@@ -874,6 +894,24 @@ mod tests {
         header[..4].copy_from_slice(&PACKET_MAGIC.to_be_bytes());
         header[4..].copy_from_slice(&payload_len.to_be_bytes());
         header
+    }
+
+    #[test]
+    fn stats_message_clamps_out_of_range_values() {
+        let metrics = crate::stats::AudioMetrics {
+            bitrate: 0,
+            sample_rate: 48_000,
+            latency_ms: i64::MAX,
+            network_latency_ms: -5,
+            packet_loss_rate: 1.5,
+            jitter_ms: 2.5,
+            buffer_duration_ms: 30,
+        };
+        let stats = stats_message(&metrics).stats.unwrap();
+        assert_eq!(stats.rtt_ms, 0);
+        assert_eq!(stats.latency_ms, i32::MAX);
+        assert_eq!(stats.packet_loss, 1.0);
+        assert_eq!(stats.jitter_ms, 2.5);
     }
 
     #[test]
