@@ -13,7 +13,7 @@
  * GNU General Public License for more details.
  */
 
-use micyou_core::config::{self, ThemeColors, UiPrefs};
+use micyou_core::config::{self, ThemeColors};
 use micyou_core::mode_lock::{self, RunMode};
 use micyou_core::modes::{ModeStatus, TerminalMode};
 use micyou_core::server::ServerState;
@@ -48,10 +48,12 @@ pub async fn switch_to_tui(state: State<'_, ServerState>) -> Result<(), String> 
 /// Persist the GUI language and theme color to ui.json for the TUI.
 #[tauri::command]
 pub fn save_ui_prefs(language: String, theme_color: String) -> Result<(), String> {
-    config::save_ui_prefs(&UiPrefs {
-        language,
-        theme_color,
-    })
+    // Read-modify-write: keep the other ui.json fields (fork's floating-window
+    // prefs) instead of resetting them to their defaults.
+    let mut prefs = config::load_ui_prefs();
+    prefs.language = language;
+    prefs.theme_color = theme_color;
+    config::save_ui_prefs(&prefs)
 }
 
 /// Export the current GUI theme colors to theme.json for the TUI.
