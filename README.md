@@ -13,7 +13,7 @@
 
 ## 声明
 
-- 本仓库基于上游 [LanRhyme/MicYou](https://github.com/LanRhyme/MicYou) v2.0.3 构建。
+- 本仓库基于上游 [LanRhyme/MicYou](https://github.com/LanRhyme/MicYou) v2.1.1 构建。
 - 除下面列出的改动外，所有功能、文档与使用方式**以上游仓库为准**。
 - 感谢 LanRhyme 及上游所有贡献者的开源工作。
 - 本 fork 只提供 **Windows 桌面端＋安卓 APK**，不提供 macOS / Linux 包。

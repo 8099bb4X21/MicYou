@@ -10,7 +10,9 @@
       "connecting": "等待裝置連線...",
       "starting": "服務啟動中...",
       "ready": "準備就緒",
-      "streamingDesc": "已成功連線至 Android 裝置",
+      "streamingDesc": "已成功連線至裝置",
+      "streamingDescAndroid": "已成功連線至 Android 裝置",
+      "streamingDescIos": "已成功連線至 iOS 裝置",
       "connectingDesc": "正在監聽連接埠 {port}",
       "startingDesc": "正在初始化音訊服務，請稍候",
       "readyDesc": "點擊開始以等待連線",
@@ -47,7 +49,6 @@
       "aecDisabled": "AEC 不可用，已自動停用",
       "aecDisabledInferenceFailed": "AEC 音訊處理失敗，已自動停用",
       "aecDisabledModelLoadFailed": "AEC AI 模型載入失敗，已自動停用",
-      "aecDisabledModelMissing": "找不到 AEC AI 模型，已自動停用",
       "aecDisabledPipeWireUnavailable": "PipeWire 不可用，AEC 已自動停用",
       "aecDisabledReferenceLost": "AEC 音訊參考流已中斷，已自動停用",
       "aecDisabledVirtualSourceMissing": "找不到虛擬音訊來源，AEC 已自動停用"
@@ -280,7 +281,7 @@
       "copied": "已複製",
       "exportLog": "匯出紀錄",
       "introTitle": "軟體介紹",
-      "introText": "MicYou 是一款開源的麥克風工具，可以將您的 Android 裝置變成電腦的高品質麥克風，支援 Wi-Fi 和 USB 連線，提供低延遲的音訊傳輸體驗"
+      "introText": "MicYou 是一款開源的麥克風工具，可以將您的 Android 或 iOS 裝置變成電腦的高品質麥克風，支援 Wi-Fi 和 USB 連線，提供低延遲的音訊傳輸體驗"
     },
     "runMode": {
       "title": "執行模式",
@@ -415,10 +416,6 @@
     "title": "開機自啟",
     "desc": "登入電腦時自動啟動 MicYou"
   },
-  "floatingWindow": {
-    "title": "桌面懸浮窗",
-    "desc": "在螢幕上顯示始終置頂的麥克風狀態懸浮球，支援點擊靜音與拖曳"
-  },
   "notifications": {
     "title": "系統通知",
     "desc": "裝置連線或斷線時顯示系統通知"
@@ -524,6 +521,7 @@
       "checkAntivirus": "檢查防毒或安全軟體設定",
       "checkUsbCable": "檢查 USB 傳輸線連線",
       "enableUsbDebugging": "在 Android 開發人員選項中啟用 USB 偵錯",
+      "connectIosOverUsb": "iPhone 或 iPad：開啟 MicYou，電腦選擇「USB 傳輸線」後點選連線；Windows 還需要安裝 iTunes",
       "runAdbCommand": "在電腦上執行此指令：{cmd}",
       "checkAdbInstalled": "確保電腦上已安裝 ADB",
       "runAdbManually": "手動執行：{cmd}",
@@ -539,7 +537,7 @@
   },
   "onboarding": {
     "title": "歡迎使用 MicYou",
-    "desc": "本應用可以將您的 Android 裝置透過 Wi-Fi 或 USB 變成電腦的高品質麥克風",
+    "desc": "本應用可以將您的 Android 或 iOS 裝置透過 Wi-Fi 或 USB 變成電腦的高品質麥克風",
     "quickStart": "快速入門指南",
     "step1Title": "1. 安裝桌面應用程式",
     "step1Desc": "在電腦上下載並安裝 MicYou 桌面應用程式",
@@ -583,6 +581,7 @@
     "desc": "使用原生或 WASM 外掛程式擴充 MicYou",
     "refresh": "重新整理",
     "loading": "正在載入外掛程式…",
+    "panelLoading": "正在載入面板…",
     "noPlugins": "尚未安裝任何外掛程式",
     "openDir": "開啟外掛程式資料夾",
     "installHint": "將外掛程式資料夾或 .zip 放入外掛程式資料夾，然後重新整理",
@@ -632,6 +631,17 @@
     "uninstallConfirm": "確定移除 {name}？",
     "marketSearch": "搜尋外掛程式商店",
     "marketAll": "全部",
-    "marketContribute": "貢獻外掛程式"
+    "marketContribute": "貢獻外掛程式",
+    "saving": "儲存中…",
+    "importPreview": {
+      "title": "安裝外掛程式？",
+      "name": "名稱",
+      "version": "版本",
+      "author": "作者",
+      "license": "授權",
+      "runtime": "類型",
+      "capabilities": "請求的能力",
+      "none": "（無）"
+    }
   }
 }
