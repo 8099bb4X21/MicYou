@@ -122,8 +122,8 @@ data class PongMessage(
 )
 
 // 跨端插件消息（对齐 tauri-app/crates/micyou-protocol/proto/network.proto field 7）。
-// 远程按键复用该通道：source="remote-key"，topic="key-event"，
-// payload 2 字节：[keyId, action]，keyId 1=右Alt 2=右Alt+空格，action 0=按下 1=松开。
+// 远程按键复用该通道：source="remote-key"，topic="key-chord"，
+// payload = [n, vk1..vkn, action]，action 0=按下 1=松开。
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class PluginMessage(
@@ -175,11 +175,6 @@ data class PluginMessage(
     }
 }
 
-/** 远程按键 keyId：1=右Alt，2=右Alt+空格，3=回车 */
-const val REMOTE_KEY_RALT = 1
-const val REMOTE_KEY_ALT_SPACE = 2
-const val REMOTE_KEY_ENTER = 3
-
 /** 和弦消息 topic：payload=[n, vk1..vkn, action]，action 0=按下 1=松开。 */
 const val REMOTE_KEY_TOPIC_CHORD = "key-chord"
 
@@ -216,12 +211,7 @@ fun chordToString(vks: List<Int>): String {
     return vks.filter { it in CHORD_KEY_OPTIONS }.distinct().joinToString(",")
 }
 
-/** 远程按键 action：0=按下，1=松开 */
-const val REMOTE_KEY_DOWN = 0
-const val REMOTE_KEY_UP = 1
-
 const val REMOTE_KEY_SOURCE = "remote-key"
-const val REMOTE_KEY_TOPIC = "key-event"
 
 // TCP handshake strings, matching HANDSHAKE_CLIENT_STR / HANDSHAKE_SERVER_STR in micyou-protocol
 const val HANDSHAKE_CLIENT = "MicYouCheck1"

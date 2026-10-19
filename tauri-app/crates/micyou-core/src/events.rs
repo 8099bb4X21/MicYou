@@ -36,6 +36,9 @@ pub trait ServerEvents: Send + Sync + 'static {
     fn aec_status_changed(&self, status: AecStatus);
     fn monitoring_state_changed(&self, enabled: bool);
     fn plugin_download_progress(&self, progress: DownloadProgress);
+    /// fork：手机端远程按键和弦（payload = [n, vk1..vkn, action]，action 0=按下 1=松开）。
+    /// 默认空实现，CLI/TUI 等前端不受影响；GUI 在前端侧做 WinUHID 注入。
+    fn remote_key_chord(&self, _payload: &[u8]) {}
 }
 
 #[derive(serde::Serialize, Clone, Debug)]

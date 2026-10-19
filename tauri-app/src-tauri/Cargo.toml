@@ -43,9 +43,9 @@ tauri-build = { version = "2", features = [] }
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["winuser", "dwmapi"] }
-# fork：WinUHID 注入（LoadLibraryW/GetProcAddress）与悬浮窗定位（FindWindowW）。
-# tauri 内部另有 windows 0.61；跨版本 HWND 一律走裸指针，不互传类型。
-windows = { version = "0.58", features = [
+# fork：WinUHID 注入（LoadLibraryW/GetProcAddress）与悬浮窗定位/免激活（FindWindowW 等）。
+# 与 tauri 内部的 windows 0.62 同版本，HWND 类型互通，无需裸指针绕行。
+windows = { version = "0.62", features = [
   "Win32_Foundation",
   "Win32_System_LibraryLoader",
   "Win32_UI_WindowsAndMessaging",

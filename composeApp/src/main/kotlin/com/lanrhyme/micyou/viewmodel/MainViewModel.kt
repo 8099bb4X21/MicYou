@@ -269,8 +269,6 @@ class MainViewModel : ViewModel() {
     // Audio Stream methods
     fun toggleStream() = audioStreamViewModel.toggleStream()
     fun toggleMute() = audioStreamViewModel.toggleMute()
-    fun remoteKeyDown(keyId: Int) = audioStreamViewModel.remoteKeyDown(keyId)
-    fun remoteKeyUp(keyId: Int) = audioStreamViewModel.remoteKeyUp(keyId)
     fun remoteChordDown(vks: List<Int>) = audioStreamViewModel.remoteChordDown(vks)
     fun remoteChordUp(vks: List<Int>) = audioStreamViewModel.remoteChordUp(vks)
     fun startStream() = audioStreamViewModel.startStream()

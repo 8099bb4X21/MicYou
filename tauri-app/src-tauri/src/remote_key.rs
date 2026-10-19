@@ -464,6 +464,24 @@ pub fn tap_vks(vks: &[u16]) -> Result<(), String> {
     Ok(())
 }
 
+/// 解析并注入手机端和弦消息 payload：`[n, vk1..vkn, action]`（与安卓发送端一致）。
+/// 调用方需先确认驱动可用（本函数不负责弹驱动引导）。
+pub fn inject_chord(payload: &[u8]) -> Result<(), String> {
+    if payload.len() < 3 {
+        return Err(format!("chord payload too short: {}", payload.len()));
+    }
+    let n = payload[0] as usize;
+    if n == 0 || n > 6 || payload.len() != n + 2 {
+        return Err(format!("bad chord count {n} len {}", payload.len()));
+    }
+    let vks: Vec<u16> = payload[1..1 + n].iter().map(|b| *b as u16).collect();
+    match payload[n + 1] {
+        ACTION_DOWN => press(&vks),
+        ACTION_UP => release(&vks),
+        other => Err(format!("unknown chord action {other}")),
+    }
+}
+
 /// 强制全零键盘报告（panic release / sanitizer 用）
 pub fn release_all() -> Result<(), String> {
     ensure_init();

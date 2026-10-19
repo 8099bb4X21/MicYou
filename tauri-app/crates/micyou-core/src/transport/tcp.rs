@@ -241,6 +241,17 @@ async fn serve(
                         }
                     };
                     log::info!("New client connected: {}", addr);
+                    // fork：记录最后接入的设备 IP（GUI 主动唤醒手机时定向单播）。
+                    {
+                        let mut prefs = crate::config::load_server_prefs();
+                        let ip = addr.ip().to_string();
+                        if prefs.last_client_ip != ip {
+                            prefs.last_client_ip = ip;
+                            if let Err(e) = crate::config::save_server_prefs(&prefs) {
+                                log::warn!("Failed to persist last_client_ip: {e}");
+                            }
+                        }
+                    }
                     let events = events.clone();
                     let audio_tx = audio_tx.clone();
                     let stats = stats.clone();
@@ -876,9 +887,16 @@ async fn handle_message(
         }
     }
     if let Some(plugin_message) = msg.plugin_message {
-        // Cross-device plugin message: route to the bus (local plugins via the
-        // dispatcher, pending RPCs via correlation id).
-        if is_active(active_connection, takeover_token, connection_id).await {
+        // fork：手机远程按键走保留通道（source = "remote-key"），不进插件总线。
+        if plugin_message.source == "remote-key" {
+            if plugin_message.topic == "key-chord"
+                && is_active(active_connection, takeover_token, connection_id).await
+            {
+                events.remote_key_chord(&plugin_message.payload);
+            }
+        } else if is_active(active_connection, takeover_token, connection_id).await {
+            // Cross-device plugin message: route to the bus (local plugins via the
+            // dispatcher, pending RPCs via correlation id).
             let logical = micyou_plugin::sync::from_wire(&plugin_message);
             plugins.bus.handle_incoming(&logical);
         }

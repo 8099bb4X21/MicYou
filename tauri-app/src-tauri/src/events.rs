@@ -76,4 +76,15 @@ impl ServerEvents for TauriEventSink {
     fn plugin_download_progress(&self, progress: DownloadProgress) {
         self.emit("plugin-download-progress", progress);
     }
+    fn remote_key_chord(&self, payload: &[u8]) {
+        // 与旧的本地 tcp_server 行为一致：无驱动时丢弃并提示，不做降级注入。
+        if !crate::remote_key::is_available() {
+            log::warn!("remote-key: WinUHid unavailable, chord dropped");
+            self.emit("remote-key-driver-missing", ());
+            return;
+        }
+        if let Err(e) = crate::remote_key::inject_chord(payload) {
+            log::warn!("remote-key chord inject failed: {e}");
+        }
+    }
 }
