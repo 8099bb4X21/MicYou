@@ -221,12 +221,14 @@ private fun DragHandle(
     onDragStateChange: (Boolean) -> Unit,
     onMoveRelative: (Int, Int) -> Unit
 ) {
+    // semantics 的 lambda 不是 @Composable，字符串需在外部取好。
+    val dragDescription = stringResource(R.string.dragToReorder)
     Box(
         modifier = Modifier
             .width(36.dp)
             .fillMaxHeight()
             .testTag("keylist_drag_$slotIndex")
-            .semantics { contentDescription = stringResource(R.string.dragToReorder) }
+            .semantics { contentDescription = dragDescription }
             .pointerInput(slotIndex, rowHeightPx) {
                 if (rowHeightPx <= 0f) return@pointerInput
                 var acc = 0f
