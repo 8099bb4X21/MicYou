@@ -8,7 +8,9 @@ const loadRoot: () => Promise<{ default: Component }> = hash.startsWith('#/plugi
   ? () => import("./features/plugins/components/PluginPanelWindow.vue")
   : hash === '#/settings'
     ? () => import("./features/settings/components/SettingsWindow.vue")
-    : () => import("./App.vue");
+    : hash === '#/floating-window'
+      ? () => import("./features/floating/components/FloatingWindow.vue")
+      : () => import("./App.vue");
 
 void loadRoot().then(({ default: RootComponent }) => {
   const app = createApp(RootComponent);

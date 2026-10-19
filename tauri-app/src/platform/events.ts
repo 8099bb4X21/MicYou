@@ -1,5 +1,6 @@
 import { emitTo, listen, type UnlistenFn } from '@tauri-apps/api/event';
 import type { AecStatus, AudioMetrics, DeviceInfo, PluginDownloadProgress, SpectrumPayload } from './types';
+import type { FloatingPrefs } from './commands';
 
 export type { UnlistenFn };
 
@@ -23,6 +24,12 @@ export interface AppEvents {
   'settings-window-shown': unknown;
   /** Settings window → main window when the output device changes. */
   'output-device-changed': string;
+  /** fork：设置页保存后广播给悬浮窗的偏好。 */
+  'floating-prefs-changed': FloatingPrefs;
+  /** fork：悬浮窗/远程按键链路发现驱动缺失，通知主窗弹引导。 */
+  'remote-key-driver-missing': unknown;
+  /** fork：悬浮窗触发启停后的通知（主窗/设置刷新状态）。 */
+  'floating-toggled': unknown;
 }
 
 export type EventName = keyof AppEvents;

@@ -70,6 +70,7 @@
           <GeneralSection v-if="currentSection === 'general'" key="general" data-drag-surface />
           <AppearanceSection v-else-if="currentSection === 'appearance'" key="appearance" data-drag-surface />
           <AudioSection v-else-if="currentSection === 'audio'" key="audio" data-drag-surface />
+          <FloatingSection v-else-if="currentSection === 'floating'" key="floating" data-drag-surface />
           <div v-else-if="currentSection === 'equalizer'" key="equalizer" data-drag-surface class="space-y-6 h-[600px]">
             <EqualizerPanel :config="settings.equalizer" />
           </div>
@@ -154,6 +155,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
+  AppWindow,
   Info,
   LayoutPanelTop,
   Mic,
@@ -178,6 +180,7 @@ import { useRestoreDefaults } from '../composables/useRestoreDefaults';
 import AboutSection from './sections/AboutSection.vue';
 import AppearanceSection from './sections/AppearanceSection.vue';
 import AudioSection from './sections/AudioSection.vue';
+import FloatingSection from './sections/FloatingSection.vue';
 import GeneralSection from './sections/GeneralSection.vue';
 import PluginPanelSection from './sections/PluginPanelSection.vue';
 
@@ -250,6 +253,7 @@ const baseSections = [
   { id: 'general', nameKey: 'settings.categories.general', icon: SettingsIcon },
   { id: 'appearance', nameKey: 'settings.categories.appearance', icon: Palette },
   { id: 'audio', nameKey: 'settings.categories.audio', icon: Mic },
+  { id: 'floating', nameKey: 'settings.categories.floating', icon: AppWindow },
   { id: 'equalizer', nameKey: 'settings.equalizer.title', icon: SlidersHorizontal },
   { id: 'plugins', nameKey: 'settings.categories.plugins', icon: Puzzle },
   { id: 'about', nameKey: 'settings.categories.about', icon: Info },

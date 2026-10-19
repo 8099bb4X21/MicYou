@@ -38,6 +38,17 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     state.plugins.load_saved_plugins();
     app.manage(state);
 
+    // fork：按 ui.json 存档恢复悬浮窗；并启动常驻唤醒监听（服务没跑时收包自动起服务）。
+    if micyou_core::config::load_ui_prefs().floating_visible {
+        if let Err(e) = commands::floating::ensure_floating_window(&handle) {
+            log::warn!(target: "floating", "restore floating window failed: {e}");
+        }
+    }
+    let wake_handle = handle.clone();
+    tauri::async_runtime::spawn(async move {
+        crate::wake::run_wake_listener(wake_handle).await;
+    });
+
     match mode_lock::acquire(RunMode::Gui) {
         Ok(()) => log::info!(target: "mode", "GUI mode lock acquired"),
         Err(e) => log::warn!(target: "mode", "GUI mode lock not acquired: {e}"),
@@ -147,6 +158,19 @@ pub fn run() {
             commands::plugins::plugin_trigger,
             commands::plugins::get_plugin_panel,
             commands::plugins::open_plugin_window,
+            // fork：悬浮窗 / 远程按键注入 / 唤醒
+            commands::floating::show_floating_window,
+            commands::floating::hide_floating_window,
+            commands::floating::toggle_floating_window,
+            commands::floating::is_floating_window_visible,
+            commands::floating::move_floating_window_delta,
+            commands::floating::get_floating_prefs,
+            commands::floating::set_floating_prefs,
+            commands::floating::toggle_streaming,
+            commands::floating::send_wake,
+            commands::floating::send_remote_key_once,
+            commands::floating::import_winuhid_dll,
+            commands::floating::log_floating,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

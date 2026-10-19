@@ -23,7 +23,9 @@ mod events;
 mod host;
 #[cfg(target_os = "linux")]
 mod kwin_effects;
+mod remote_key;
 mod tray;
+mod wake;
 mod window;
 
 /// Picks the WebKitGTK rendering path before GTK starts.

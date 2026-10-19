@@ -1,26 +1,21 @@
 import { onMounted, onUnmounted } from "vue";
-import { currentMonitor } from "@tauri-apps/api/window";
-import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
-import type { UnlistenFn } from "@tauri-apps/api/event";
-import { PhysicalPosition } from "@tauri-apps/api/dpi";
+import type { UnlistenFn } from "@/platform";
+import { currentMonitor, onMoved, outerSize, setPosition } from "@/platform";
 
 /**
  * 窗口位置记忆：关闭/移动时存 localStorage，打开时恢复并按当前显示器钳制，
  * 换分辨率后不会跑出屏幕。每窗口独立 key（主窗/悬浮窗各存各的）。
  */
 export function useWindowPos(storageKey: string) {
-  const appWindow = getCurrentWebviewWindow();
   let unlistenMove: UnlistenFn | null = null;
 
+  /** 把坐标钳制到当前显示器可视范围内（换分辨率/拔显示器后不跑出屏幕）。 */
   async function clampToVisible(
     x: number,
     y: number,
-  ): Promise<PhysicalPosition> {
+  ): Promise<{ x: number; y: number }> {
     try {
-      const [size, mon] = await Promise.all([
-        appWindow.outerSize(),
-        currentMonitor(),
-      ]);
+      const [size, mon] = await Promise.all([outerSize(), currentMonitor()]);
       const mw = mon?.size.width ?? 1920;
       const mh = mon?.size.height ?? 1080;
       const mx = mon?.position.x ?? 0;
@@ -33,9 +28,9 @@ export function useWindowPos(storageKey: string) {
         Math.max(Math.round(y), my),
         Math.max(my, my + mh - size.height),
       );
-      return new PhysicalPosition(cx, cy);
+      return { x: cx, y: cy };
     } catch {
-      return new PhysicalPosition(Math.round(x), Math.round(y));
+      return { x: Math.round(x), y: Math.round(y) };
     }
   }
 
@@ -45,19 +40,19 @@ export function useWindowPos(storageKey: string) {
       if (raw) {
         const p = JSON.parse(raw) as { x: number; y: number };
         if (Number.isFinite(p.x) && Number.isFinite(p.y)) {
-          await appWindow.setPosition(await clampToVisible(p.x, p.y));
+          const pos = await clampToVisible(p.x, p.y);
+          await setPosition(pos.x, pos.y);
         }
       }
     } catch {
       /* 无存档或显示器不可用时保持默认位置 */
     }
     try {
-      unlistenMove = await appWindow.onMoved(
-        ({ payload }: { payload: PhysicalPosition }) => {
+      unlistenMove = await onMoved((pos) => {
         try {
           localStorage.setItem(
             storageKey,
-            JSON.stringify({ x: payload.x, y: payload.y }),
+            JSON.stringify({ x: pos.x, y: pos.y }),
           );
         } catch {
           /* 忽略存储失败 */

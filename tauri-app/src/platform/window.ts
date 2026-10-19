@@ -1,6 +1,7 @@
 import type { UnlistenFn } from '@tauri-apps/api/event';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
+import { getCurrentWindow, LogicalSize, type Monitor } from '@tauri-apps/api/window';
+import { PhysicalPosition, PhysicalSize } from '@tauri-apps/api/dpi';
 
 /** Operations on the window this webview lives in. */
 
@@ -69,4 +70,38 @@ export function onFileDrop(handler: (event: FileDropEvent) => void): Promise<Unl
   return getCurrentWebviewWindow().onDragDropEvent(({ payload }) => {
     handler(payload.type === 'drop' ? { type: 'drop', paths: payload.paths } : { type: payload.type });
   });
+}
+
+// ---------------------------------------------------------------------------
+// fork 悬浮窗：位置读写与移动监听（位置记忆、拖拽兜底、显示器钳制）
+// ---------------------------------------------------------------------------
+
+export function outerPosition(): Promise<PhysicalPosition> {
+  return getCurrentWindow().outerPosition();
+}
+
+/** 物理像素坐标设置窗口位置（拖拽兜底与位置恢复）。 */
+export function setPosition(x: number, y: number): Promise<void> {
+  return getCurrentWindow().setPosition(new PhysicalPosition(Math.round(x), Math.round(y)));
+}
+
+export function outerSize(): Promise<PhysicalSize> {
+  return getCurrentWindow().outerSize();
+}
+
+export function innerSize(): Promise<PhysicalSize> {
+  return getCurrentWindow().innerSize();
+}
+
+/** 逻辑尺寸设置（浮窗右键菜单展开/收起时改窗大小）。 */
+export function setLogicalSize(width: number, height: number): Promise<void> {
+  return getCurrentWindow().setSize(new LogicalSize(width, height));
+}
+
+export function onMoved(handler: (pos: PhysicalPosition) => void): Promise<UnlistenFn> {
+  return getCurrentWindow().onMoved(({ payload }) => handler(payload));
+}
+
+export function currentMonitor(): Promise<Monitor | null> {
+  return getCurrentWindow().currentMonitor();
 }

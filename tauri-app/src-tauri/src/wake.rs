@@ -52,7 +52,7 @@ pub fn is_wake_packet(buf: &[u8]) -> bool {
 /// 向手机上次 IP 单播 + 局域网广播（尽力而为，调用方只记日志）。
 /// 返回成功发出的目标数。
 pub fn send_wake_to_last() -> usize {
-    let prefs = crate::app_config::load_server_prefs();
+    let prefs = micyou_core::config::load_server_prefs();
     let pkt = build_wake_packet();
     let sock = match std::net::UdpSocket::bind("0.0.0.0:0") {
         Ok(s) => s,
@@ -104,8 +104,8 @@ pub async fn run_wake_listener(app: tauri::AppHandle) {
             continue;
         }
         log::info!("wake packet from {src}");
-        let state = app.state::<crate::server::ServerState>();
-        match crate::commands::start_with_saved_prefs(&state, &app).await {
+        let state = app.state::<micyou_core::server::ServerState>();
+        match crate::commands::floating::start_with_saved_prefs(&state).await {
             Ok(m) => log::info!("wake start: {m}"),
             Err(e) => log::warn!("wake start failed: {e}"),
         }

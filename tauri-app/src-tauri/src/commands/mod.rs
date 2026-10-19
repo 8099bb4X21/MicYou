@@ -17,6 +17,7 @@
 
 pub mod about;
 pub mod audio;
+pub mod floating;
 pub mod mode;
 pub mod network;
 pub mod plugins;

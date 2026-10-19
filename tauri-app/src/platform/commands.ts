@@ -129,6 +129,40 @@ export interface Commands {
   show_main_window: { args: NoArgs; result: void };
   minimize_main_window: { args: NoArgs; result: void };
   hide_main_window: { args: NoArgs; result: void };
+
+  // fork：悬浮窗 / 远程按键注入 / 唤醒
+  show_floating_window: { args: NoArgs; result: void };
+  hide_floating_window: { args: NoArgs; result: void };
+  toggle_floating_window: { args: NoArgs; result: boolean };
+  is_floating_window_visible: { args: NoArgs; result: boolean };
+  move_floating_window_delta: { args: { deltaX: number; deltaY: number }; result: void };
+  get_floating_prefs: { args: NoArgs; result: FloatingPrefs };
+  set_floating_prefs: {
+    args: {
+      visible: boolean;
+      click: string;
+      dblclick: string;
+      send?: string;
+      sendClick?: string;
+      sendDblclick?: string;
+    };
+    result: void;
+  };
+  toggle_streaming: { args: NoArgs; result: string };
+  send_wake: { args: NoArgs; result: string };
+  send_remote_key_once: { args: { key?: string }; result: void };
+  import_winuhid_dll: { args: { path: string }; result: boolean };
+  log_floating: { args: { msg: string }; result: void };
+}
+
+/** fork：ui.json 中的悬浮窗偏好（get_floating_prefs 的返回形状）。 */
+export interface FloatingPrefs {
+  floatingVisible: boolean;
+  floatingClick: string;
+  floatingDblclick: string;
+  floatingSend: string;
+  floatingSendClick: string;
+  floatingSendDblclick: string;
 }
 
 export type CommandName = keyof Commands;

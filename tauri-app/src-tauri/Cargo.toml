@@ -34,11 +34,22 @@ log.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 
+# fork：远程按键注入（DLL 句柄缓存）与唤醒监听（UDP）所需。
+parking_lot = "0.12"
+tokio = { version = "1", features = ["net", "time"] }
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["winuser", "dwmapi"] }
+# fork：WinUHID 注入（LoadLibraryW/GetProcAddress）与悬浮窗定位（FindWindowW）。
+# tauri 内部另有 windows 0.61；跨版本 HWND 一律走裸指针，不互传类型。
+windows = { version = "0.58", features = [
+  "Win32_Foundation",
+  "Win32_System_LibraryLoader",
+  "Win32_UI_WindowsAndMessaging",
+] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk = { version = "0.18", default-features = false }

@@ -32,6 +32,7 @@ import PocketLayout from './features/pocket/components/PocketLayout.vue';
 import CloseConfirmDialog from './features/window/components/CloseConfirmDialog.vue';
 import UdpWarningDialog from './features/connection/components/UdpWarningDialog.vue';
 import MonitoringWarningDialog from './features/audio/components/MonitoringWarningDialog.vue';
+import RemoteKeyDriverDialog from './shared/components/RemoteKeyDriverDialog.vue';
 
 // Raw asset content and animation utilities
 import appIconSvg from './shared/assets/app_icon.svg?raw';
@@ -82,10 +83,15 @@ const openSettings = async () => {
     console.error('open_settings_window failed:', e);
   }
 };
+const showRemoteKeyDialog = ref(false);
 const track = useListeners();
 onMounted(() => {
   void track(onEvent('output-device-changed', (payload) => {
     server.outputDevice.value = payload;
+  }));
+  // fork：悬浮窗/远程按键链路发现 WinUHID 驱动缺失时弹引导窗。
+  void track(onEvent('remote-key-driver-missing', () => {
+    showRemoteKeyDialog.value = true;
   }));
 });
 const pocketMode = useStorage('micyou_pocket_mode', false);
@@ -555,6 +561,9 @@ onUnmounted(() => {
     />
 
     <CloseConfirmDialog v-model:show="win.showCloseConfirm.value" @select="win.handleCloseSelect" />
+
+    <!-- fork：WinUHID 驱动缺失引导（悬浮窗点击发送按键后可能触发） -->
+    <RemoteKeyDriverDialog :show="showRemoteKeyDialog" @close="showRemoteKeyDialog = false" />
 
     <ConnectionErrorDialog
       :show="server.showErrorDialog.value"
