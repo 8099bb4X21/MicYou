@@ -1,6 +1,5 @@
 import { onMounted, onUnmounted } from "vue";
-import type { UnlistenFn } from "@/platform";
-import { currentMonitor, onMoved, outerSize, setPosition } from "@/platform";
+import { appWindow, type UnlistenFn } from "@/platform";
 
 /**
  * 窗口位置记忆：关闭/移动时存 localStorage，打开时恢复并按当前显示器钳制，
@@ -15,7 +14,10 @@ export function useWindowPos(storageKey: string) {
     y: number,
   ): Promise<{ x: number; y: number }> {
     try {
-      const [size, mon] = await Promise.all([outerSize(), currentMonitor()]);
+      const [size, mon] = await Promise.all([
+        appWindow.outerSize(),
+        appWindow.currentMonitor(),
+      ]);
       const mw = mon?.size.width ?? 1920;
       const mh = mon?.size.height ?? 1080;
       const mx = mon?.position.x ?? 0;
@@ -41,14 +43,14 @@ export function useWindowPos(storageKey: string) {
         const p = JSON.parse(raw) as { x: number; y: number };
         if (Number.isFinite(p.x) && Number.isFinite(p.y)) {
           const pos = await clampToVisible(p.x, p.y);
-          await setPosition(pos.x, pos.y);
+          await appWindow.setPosition(pos.x, pos.y);
         }
       }
     } catch {
       /* 无存档或显示器不可用时保持默认位置 */
     }
     try {
-      unlistenMove = await onMoved((pos) => {
+      unlistenMove = await appWindow.onMoved((pos) => {
         try {
           localStorage.setItem(
             storageKey,

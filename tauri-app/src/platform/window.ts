@@ -1,6 +1,10 @@
 import type { UnlistenFn } from '@tauri-apps/api/event';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { getCurrentWindow, LogicalSize, type Monitor } from '@tauri-apps/api/window';
+import {
+  currentMonitor as tauriCurrentMonitor,
+  getCurrentWindow,
+  LogicalSize,
+} from '@tauri-apps/api/window';
 import { PhysicalPosition, PhysicalSize } from '@tauri-apps/api/dpi';
 
 /** Operations on the window this webview lives in. */
@@ -102,6 +106,7 @@ export function onMoved(handler: (pos: PhysicalPosition) => void): Promise<Unlis
   return getCurrentWindow().onMoved(({ payload }) => handler(payload));
 }
 
-export function currentMonitor(): Promise<Monitor | null> {
-  return getCurrentWindow().currentMonitor();
+/** 当前窗口所在显示器（模块级 API，作用于当前窗口）。 */
+export function currentMonitor(): ReturnType<typeof tauriCurrentMonitor> {
+  return tauriCurrentMonitor();
 }
