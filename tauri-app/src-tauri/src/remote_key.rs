@@ -348,46 +348,49 @@ pub fn is_ready_cached() -> bool {
 
 const MOD_STAGGER_MS: u64 = 4;
 
+/// 按下：强制「修饰键先按、主键后按」。
+/// 1) 修饰键按 Ctrl→Shift→Win→Alt 分步叠加（步间 MOD_STAGGER_MS）；
+/// 2) 全部就位后，再与主键同帧按下。
+/// 无修饰键时退回单帧直发。
 fn press_keyboard(dev: &Devices, vks: &[u16]) -> Result<(), String> {
     let (mods, keys) = split_modifiers_and_keys(vks);
-    if mods.len() <= 1 {
+    if mods.is_empty() {
         let report = build_keyboard_report(vks)?;
         return submit(dev, dev.keyboard, &report);
     }
-    // 多修饰键：逐步叠加，模拟真实按键时序
+    // 1) 只按修饰键，逐步叠加（主键此时不入报告）
     for step in 1..=mods.len() {
-        let partial: Vec<u16> = mods
-            .iter()
-            .take(step)
-            .chain(keys.iter())
-            .copied()
-            .collect();
-        let report = build_keyboard_report(&partial)?;
+        let report = build_keyboard_report(&mods[..step])?;
         submit(dev, dev.keyboard, &report)?;
-        if step < mods.len() {
-            std::thread::sleep(Duration::from_millis(MOD_STAGGER_MS));
-        }
+        std::thread::sleep(Duration::from_millis(MOD_STAGGER_MS));
     }
-    Ok(())
+    // 2) 修饰键全部就位后再按主键；若本就没有主键，上面已按下，无需重复提交
+    if keys.is_empty() {
+        return Ok(());
+    }
+    let report = build_keyboard_report(vks)?;
+    submit(dev, dev.keyboard, &report)
 }
 
+/// 松开：与按下逆序对称——先抬主键（修饰键保持按住），再逆序松开修饰键。
+/// 逆序为「先放 Alt/Win，最后放 Ctrl」，避免 Alt 单键残留触发菜单。
 fn release_keyboard(dev: &Devices, vks: &[u16]) -> Result<(), String> {
     let (mods, keys) = split_modifiers_and_keys(vks);
-    if mods.len() <= 1 {
+    if mods.is_empty() {
         return submit(dev, dev.keyboard, &[0u8; 8]);
     }
-    // 逆序松开：先放 Alt/Win，最后放 Ctrl，避免 Alt 单键残留触发菜单
+    // 1) 先抬主键，修饰键保持按下
+    if !keys.is_empty() {
+        let report = build_keyboard_report(&mods)?;
+        submit(dev, dev.keyboard, &report)?;
+        std::thread::sleep(Duration::from_millis(MOD_STAGGER_MS));
+    }
+    // 2) 逆序松开修饰键，最后必达全零
     for held in (0..mods.len()).rev() {
         if held == 0 {
             submit(dev, dev.keyboard, &[0u8; 8])?;
         } else {
-            let partial: Vec<u16> = mods
-                .iter()
-                .take(held)
-                .chain(keys.iter())
-                .copied()
-                .collect();
-            let report = build_keyboard_report(&partial)?;
+            let report = build_keyboard_report(&mods[..held])?;
             submit(dev, dev.keyboard, &report)?;
         }
         if held > 0 {
