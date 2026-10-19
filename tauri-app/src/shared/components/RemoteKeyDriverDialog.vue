@@ -59,8 +59,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Keyboard as KeyboardIcon } from '@lucide/vue'
-import { invoke } from '@tauri-apps/api/core'
-import { open } from '@tauri-apps/plugin-dialog'
+import { command, pickFile } from '@/platform'
 
 defineProps<{
   show: boolean
@@ -76,13 +75,9 @@ const { t } = useI18n()
 async function handleImport() {
   importError.value = ''
   try {
-    const picked = await open({
-      multiple: false,
-      directory: false,
-      filters: [{ name: 'WinUHid', extensions: ['dll'] }],
-    })
+    const picked = await pickFile([{ name: 'WinUHid', extensions: ['dll'] }])
     if (!picked) return // 用户取消
-    const ready = await invoke<boolean>('import_winuhid_dll', { path: String(picked) })
+    const ready = await command('import_winuhid_dll', { path: picked })
     if (ready) {
       emit('close')
     } else {

@@ -30,11 +30,8 @@ import io.ktor.network.sockets.openReadChannel
 import io.ktor.network.sockets.openWriteChannel
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
-import io.ktor.utils.io.jvm.javaio.toByteReadChannel
-import io.ktor.utils.io.readAvailable
 import io.ktor.utils.io.readFully
 import io.ktor.utils.io.readInt
-import io.ktor.utils.io.reader
 import io.ktor.utils.io.writeFully
 import io.ktor.utils.io.writeInt
 import kotlinx.coroutines.CompletableDeferred
@@ -45,6 +42,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -61,7 +59,6 @@ import kotlinx.serialization.protobuf.ProtoBuf
 import io.github.jaredmdobson.concentus.OpusApplication
 import io.github.jaredmdobson.concentus.OpusEncoder
 import java.io.EOFException
-import java.io.OutputStream
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetSocketAddress
@@ -70,16 +67,19 @@ import java.nio.ByteOrder
 import java.lang.ref.WeakReference
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
-import kotlin.coroutines.coroutineContext
 import kotlin.math.roundToInt
 import com.lanrhyme.micyou.audio.AndroidAudioSource
 import com.lanrhyme.micyou.audio.AudioLevelData
 import com.lanrhyme.micyou.network.AudioPacketMessage
 import com.lanrhyme.micyou.network.AudioPacketMessageOrdered
+import com.lanrhyme.micyou.network.CLIENT_PLATFORM
 import com.lanrhyme.micyou.network.CODEC_OPUS
 import com.lanrhyme.micyou.network.ConnectMessage
+import com.lanrhyme.micyou.network.HANDSHAKE_CLIENT
+import com.lanrhyme.micyou.network.HANDSHAKE_SERVER
 import com.lanrhyme.micyou.network.calculateUdpPort
 import com.lanrhyme.micyou.network.MessageWrapper
+import com.lanrhyme.micyou.network.MAX_CONTROL_PAYLOAD_SIZE
 import com.lanrhyme.micyou.network.PACKET_MAGIC
 import com.lanrhyme.micyou.network.UDP_CUSTOM_HEADER_SIZE
 import com.lanrhyme.micyou.network.UDP_MAX_DATAGRAM_SIZE
@@ -97,7 +97,6 @@ import com.lanrhyme.micyou.network.MuteMessage
 import com.lanrhyme.micyou.network.PluginMessage
 import com.lanrhyme.micyou.network.PongMessage
 import com.lanrhyme.micyou.network.REMOTE_KEY_SOURCE
-import com.lanrhyme.micyou.network.REMOTE_KEY_TOPIC
 import com.lanrhyme.micyou.network.REMOTE_KEY_TOPIC_CHORD
 /**
  * Converts OutputStream to ByteWriteChannel using the current coroutine context.
@@ -257,31 +256,6 @@ internal class ActiveEngineOwner<E : Any, R : Any> {
             false
         }
     }
-}
-
-suspend fun OutputStream.toByteWriteChannelSuspend(): ByteWriteChannel {
-    val scope = CoroutineScope(coroutineContext)
-    val outputStream = this
-    return scope.reader(Dispatchers.IO, autoFlush = true) {
-        val buffer = ByteArray(4096)
-        try {
-            while (!channel.isClosedForRead) {
-                val count = channel.readAvailable(buffer)
-                if (count == -1) break
-                try {
-                    outputStream.write(buffer, 0, count)
-                    outputStream.flush()
-                } catch (e: java.io.IOException) {
-                    Logger.e("ByteWriteChannel", "I/O error writing to stream: ${e.message}", e)
-                    break
-                }
-            }
-        } catch (e: kotlinx.coroutines.CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Logger.e("ByteWriteChannel", "Unexpected error in write channel: ${e.message}", e)
-        }
-    }.channel
 }
 
 class AudioEngine constructor() {
@@ -448,8 +422,6 @@ class AudioEngine constructor() {
     private var lifecycleGeneration: Long = 0
     private var startRequestGeneration: Long = 0
 
-    private val CHECK_1 = "MicYouCheck1"
-    private val CHECK_2 = "MicYouCheck2"
 
     suspend fun start(
         ip: String,
@@ -488,7 +460,7 @@ class AudioEngine constructor() {
             startStopMutex.withLock {
                 if (firstAttempt) {
                     if (closed.get()) throw IllegalStateException("AudioEngine is closed")
-                    configRestartJob?.takeIf { it !== coroutineContext[Job] }?.cancel()
+                    configRestartJob?.takeIf { it !== currentCoroutineContext()[Job] }?.cancel()
                     val wasDesiredRunning = desiredRunning
                     val timedOutJob = stopTimedOutJob
                     if (timedOutJob != null && !timedOutJob.isCompleted) {
@@ -526,7 +498,9 @@ class AudioEngine constructor() {
                     var sessionNoiseSuppressor: NoiseSuppressor? = null
                     var sessionAutomaticGainControl: AutomaticGainControl? = null
                     var sessionUdpConsecutiveFailures = 0
-                    var sessionLastPingReceivedTime = System.currentTimeMillis()
+                    // Monotonic clock: a wall-clock jump must not fake a heartbeat timeout.
+                    // Written by the reader coroutine, read by the capture loop.
+                    val sessionLastPingReceivedTime = java.util.concurrent.atomic.AtomicLong(SystemClock.elapsedRealtime())
                     val channel = Channel<MessageWrapper>(capacity = 64, onBufferOverflow = BufferOverflow.DROP_OLDEST)
                     startStopMutex.withLock {
                         if (lifecycleGeneration == sessionGeneration && desiredRunning) {
@@ -539,7 +513,7 @@ class AudioEngine constructor() {
                     var output: ByteWriteChannel? = null
                     var selectorManager: SelectorManager? = null
                     var closeConnection: () -> Unit = {}
-                    val sessionJobIdentity = requireNotNull(coroutineContext[Job])
+                    val sessionJobIdentity = requireNotNull(currentCoroutineContext()[Job])
 
                     try {
                         if (lifecycleGeneration != sessionGeneration || !desiredRunning) {
@@ -701,12 +675,12 @@ class AudioEngine constructor() {
                             val out = output ?: throw IllegalStateException("TCP output channel unavailable")
                             val inChannel = input ?: throw IllegalStateException("TCP input channel unavailable")
                             Logger.d("AudioEngine", "Starting handshake")
-                            out.writeFully(CHECK_1.encodeToByteArray())
+                            out.writeFully(HANDSHAKE_CLIENT.encodeToByteArray())
                             out.flush()
-                            val responseBuffer = ByteArray(CHECK_2.length)
+                            val responseBuffer = ByteArray(HANDSHAKE_SERVER.length)
                             inChannel.readFully(responseBuffer, 0, responseBuffer.size)
 
-                            if (!responseBuffer.decodeToString().equals(CHECK_2)) {
+                            if (!responseBuffer.decodeToString().equals(HANDSHAKE_SERVER)) {
                                 val msg = getString(R.string.errorHandshakeFailedDetailed)
                                 Logger.e("AudioEngine", "Handshake failed: received ${responseBuffer.decodeToString()}")
                                 throw IllegalStateException(msg)
@@ -714,7 +688,7 @@ class AudioEngine constructor() {
                             Logger.i("AudioEngine", "Handshake successful")
                             val connectBytes = proto.encodeToByteArray(
                                 MessageWrapper.serializer(),
-                                MessageWrapper(connect = ConnectMessage(sessionId))
+                                MessageWrapper(connect = ConnectMessage(sessionId, CLIENT_PLATFORM))
                             )
                             out.writeInt(PACKET_MAGIC)
                             out.writeInt(connectBytes.size)
@@ -809,6 +783,11 @@ class AudioEngine constructor() {
                                             throw java.io.IOException("Invalid Packet Magic")
                                         }
                                         val length = inChannel.readInt()
+                                        // Same bound as the server's MAX_CONTROL_PAYLOAD_LEN: a corrupt
+                                        // length would otherwise allocate gigabytes or desync the stream.
+                                        if (length < 0 || length > MAX_CONTROL_PAYLOAD_SIZE) {
+                                            throw java.io.IOException("Invalid control frame length: $length")
+                                        }
 
                                         if (length > 0) {
                                             val packetBytes = ByteArray(length)
@@ -821,7 +800,7 @@ class AudioEngine constructor() {
                                                 }
 
                                                 if (wrapper.ping != null) {
-                                                    sessionLastPingReceivedTime = System.currentTimeMillis()
+                                                    sessionLastPingReceivedTime.set(SystemClock.elapsedRealtime())
                                                     channel.send(MessageWrapper(pong = PongMessage(wrapper.ping.timestamp)))
                                                 }
                                             } catch (e: Exception) {
@@ -851,6 +830,12 @@ class AudioEngine constructor() {
                         val readBufSize = minOf(minBufSize, alignedPayloadSize).coerceAtLeast(frameAlignBytes)
                         val buffer = ByteArray(readBufSize)
                         val floatBuffer = if (androidAudioFormat == android.media.AudioFormat.ENCODING_PCM_FLOAT) FloatArray(readBufSize / 4) else null
+                        // API < 23 reads float PCM through a direct buffer; reuse one per session.
+                        val legacyFloatByteBuf = if (floatBuffer != null && Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+                            ByteBuffer.allocateDirect(floatBuffer.size * 4).order(ByteOrder.nativeOrder())
+                        } else {
+                            null
+                        }
 
                         // Opus 编码：固定 20ms 帧。AudioRecord 返回的块大小任意，
                         // 先把 PCM 转成 Short 累积到 opusPcmAccumulator，凑满一帧再编码发送。
@@ -865,13 +850,13 @@ class AudioEngine constructor() {
                         var sequenceNumber = 0
                         var fecGroupBuffer = mutableListOf<ByteArray>()
                         var fecGroupStartSeq = 0
-                        sessionLastPingReceivedTime = System.currentTimeMillis()
+                        sessionLastPingReceivedTime.set(SystemClock.elapsedRealtime())
                         var lastSuccessfulAudioRead = SystemClock.elapsedRealtime()
 
                         while (isActive) {
                             if (writerJob.isCancelled || writerJob.isCompleted) throw Exception("Writer job failed")
                             if (readerJob != null && (readerJob.isCancelled || readerJob.isCompleted)) throw Exception("Reader job failed - connection lost")
-                            if (readerJob != null && System.currentTimeMillis() - sessionLastPingReceivedTime > HEARTBEAT_TIMEOUT_MS) {
+                            if (readerJob != null && SystemClock.elapsedRealtime() - sessionLastPingReceivedTime.get() > HEARTBEAT_TIMEOUT_MS) {
                                 throw Exception("Heartbeat timeout - server unreachable ($HEARTBEAT_TIMEOUT_MS ms)")
                             }
 
@@ -885,7 +870,8 @@ class AudioEngine constructor() {
                                     recorder.read(floatBuffer, 0, floatBuffer.size, AudioRecord.READ_NON_BLOCKING)
                                 } else {
                                     // API < 23: 用 ByteBuffer 间接读取 float PCM
-                                    val byteBuf = ByteBuffer.allocateDirect(floatBuffer.size * 4)
+                                    val byteBuf = legacyFloatByteBuf!!
+                                    byteBuf.clear()
                                     val readBytes = recorder.read(byteBuf, floatBuffer.size * 4)
                                     if (readBytes > 0) {
                                         byteBuf.rewind()
@@ -1168,7 +1154,9 @@ class AudioEngine constructor() {
                 val fb = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN).asFloatBuffer()
                 var n = 0
                 while (n < fb.limit() && n < out.size) {
-                    out[n] = (fb.get(n) * 32767.0f).roundToInt().coerceIn(-32768, 32767).toShort()
+                    // roundToInt() throws on NaN, which a faulty HAL can deliver
+                    val sample = fb.get(n).takeUnless { it.isNaN() } ?: 0f
+                    out[n] = (sample * 32767.0f).roundToInt().coerceIn(-32768, 32767).toShort()
                     n++
                 }
                 n
@@ -1507,32 +1495,6 @@ class AudioEngine constructor() {
     }
 
     /**
-     * 发送远程按键事件（走 TCP 控制通道，复用 mute 同款 sendChannel）。
-     * @param keyId REMOTE_KEY_RALT=1 右Alt，REMOTE_KEY_ALT_SPACE=2 右Alt+空格
-     * @param pressed true=按下，false=松开
-     */
-    suspend fun sendRemoteKey(keyId: Int, pressed: Boolean) {
-        if (_state.value == StreamState.Streaming || _state.value == StreamState.Connecting) {
-            try {
-                val payload = byteArrayOf(keyId.toByte(), if (pressed) 0 else 1)
-                sendChannel?.send(
-                    MessageWrapper(
-                        pluginMessage = PluginMessage(
-                            source = REMOTE_KEY_SOURCE,
-                            topic = REMOTE_KEY_TOPIC,
-                            payload = payload
-                        )
-                    )
-                )
-            } catch (e: Exception) {
-                Logger.e("AudioEngine", "Failed to send remote key message: ${e.message}")
-            }
-        } else {
-            Logger.w("AudioEngine", "Ignore remote key: not streaming")
-        }
-    }
-
-    /**
      * 发送自定义和弦（音量键配置，VK 直传）。
      * payload [n, vk1..vkn, action]，与 PC handle_remote_chord 对齐。
      */
@@ -1614,7 +1576,6 @@ class AudioEngine constructor() {
     private fun isNormalDisconnect(e: Throwable): Boolean {
         if (e is kotlinx.coroutines.CancellationException) return true
         if (e is EOFException) return true
-        if (e is io.ktor.utils.io.errors.EOFException) return true
         if (e is java.io.IOException) {
             val msg = e.message ?: ""
             if (msg.contains("Socket closed", ignoreCase = true)) return true
@@ -1644,7 +1605,7 @@ class AudioEngine constructor() {
                                ((buffer[byteIndex + 1].toInt() and 0xFF) shl 8) or
                                ((buffer[byteIndex + 2].toInt() and 0xFF) shl 16) or
                                ((buffer[byteIndex + 3].toInt() and 0xFF) shl 24)
-    val sample = Float.fromBits(bits)
+                    val sample = Float.fromBits(bits)
                     sum += sample * sample
                     maxSample = maxOf(maxSample, kotlin.math.abs(sample.toDouble()))
                 }
@@ -1664,15 +1625,15 @@ class AudioEngine constructor() {
                     val byteIndex = i * 2
                     val sample = (buffer[byteIndex].toInt() and 0xFF) or
                                  ((buffer[byteIndex + 1].toInt()) shl 8)
-    val normalized = sample / 32768.0
+                    val normalized = sample / 32768.0
                     sum += normalized * normalized
                     maxSample = maxOf(maxSample, kotlin.math.abs(normalized))
                 }
             }
         }
         if (sampleCount == 0) return AudioLevelData.SILENT
-        val rms = Math.sqrt(sum / sampleCount).toFloat().coerceIn(0f, 1f)
-    val peak = maxSample.toFloat().coerceIn(0f, 1f)
+        val rms = kotlin.math.sqrt(sum / sampleCount).toFloat().coerceIn(0f, 1f)
+        val peak = maxSample.toFloat().coerceIn(0f, 1f)
         return AudioLevelData.fromRmsAndPeak(rms, peak)
     }
 }

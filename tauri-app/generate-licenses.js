@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -7,9 +8,43 @@ const appDir = path.dirname(fileURLToPath(import.meta.url));
 const resourcesDir = path.join(appDir, 'src-tauri', 'resources');
 const generatedDir = path.join(appDir, 'src', 'generated');
 const outputFile = path.join(generatedDir, 'third-party-licenses.html');
-const packageLockFile = path.join(appDir, 'package-lock.json');
+const bunLockFile = path.join(appDir, 'bun.lock');
 
 await mkdir(generatedDir, { recursive: true });
+
+// cargo-about takes ~20 s, so the report is only rebuilt when an input changes.
+// The fingerprint of the inputs is stored on the first line of the report.
+async function inputFingerprint() {
+  const crateDirs = (await readdir(path.join(appDir, 'crates'))).map((dir) => path.join('crates', dir));
+  const resources = (await readdir(resourcesDir)).filter((file) => /^LICENSE-.+\.txt$/i.test(file));
+  const inputs = [
+    'generate-licenses.js',
+    'about.toml',
+    'about.hbs',
+    'Cargo.lock',
+    'bun.lock',
+    'package.json',
+    'Cargo.toml',
+    path.join('src-tauri', 'Cargo.toml'),
+    ...crateDirs.map((dir) => path.join(dir, 'Cargo.toml')),
+    ...resources.map((file) => path.join('src-tauri', 'resources', file)),
+  ].sort();
+  const hash = createHash('sha256');
+  for (const input of inputs) {
+    hash.update(input);
+    hash.update(await readFile(path.join(appDir, input)).catch(() => ''));
+  }
+  return hash.digest('hex');
+}
+
+const fingerprint = await inputFingerprint();
+const stamp = `<!-- licenses-inputs: ${fingerprint} -->`;
+const force = process.argv.includes('--force');
+const previous = await readFile(outputFile, 'utf8').catch(() => '');
+if (!force && previous.startsWith(stamp)) {
+  console.log('[licenses] Inputs unchanged, keeping the existing report (--force to rebuild)');
+  process.exit(0);
+}
 
 const escapeHtml = (value) =>
   String(value)
@@ -132,26 +167,74 @@ async function readLicenseFiles(packageDirectory) {
   return texts.filter(Boolean).join('\n\n');
 }
 
+// bun.lock is JSON with trailing commas. Package keys are install paths:
+// "name" is hoisted, "parent/name" is nested under parent's node_modules.
+async function readBunLock() {
+  const text = await readFile(bunLockFile, 'utf8');
+  return JSON.parse(text.replace(/,(\s*[}\]])/g, '$1'));
+}
+
+function keySegments(key) {
+  const parts = key.split('/');
+  const names = [];
+  for (let i = 0; i < parts.length; i++) {
+    names.push(parts[i].startsWith('@') ? `${parts[i]}/${parts[++i]}` : parts[i]);
+  }
+  return names;
+}
+
+// Node resolution: look in the requiring package's own node_modules first,
+// then walk up through its parents to the hoisted root.
+function resolveKey(lockPackages, parentKey, name) {
+  const scope = parentKey ? keySegments(parentKey) : [];
+  for (let depth = scope.length; depth >= 0; depth--) {
+    const key = [...scope.slice(0, depth), name].join('/');
+    if (lockPackages[key]) return key;
+  }
+  return null;
+}
+
 async function generateNpmReport() {
-  const lock = JSON.parse(await readFile(packageLockFile, 'utf8'));
+  const lock = await readBunLock();
+  const lockPackages = lock.packages ?? {};
+  const root = lock.workspaces?.[''] ?? {};
+  const queue = Object.keys({ ...root.dependencies, ...root.optionalDependencies })
+    .map((name) => resolveKey(lockPackages, '', name))
+    .filter(Boolean);
+  const visited = new Set();
   const seen = new Set();
   const packages = [];
 
-  for (const [packagePath, metadata] of Object.entries(lock.packages ?? {})) {
-    if (!packagePath || metadata.dev || !packagePath.includes('node_modules/')) continue;
+  while (queue.length) {
+    const key = queue.shift();
+    if (visited.has(key)) continue;
+    visited.add(key);
 
-    const marker = 'node_modules/';
-    const name = metadata.name ?? packagePath.slice(packagePath.lastIndexOf(marker) + marker.length);
-    const version = metadata.version ?? 'unknown';
-    const key = `${name}@${version}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
+    const [spec, , info = {}] = lockPackages[key];
+    const deps = { ...info.dependencies, ...info.optionalDependencies, ...info.peerDependencies };
+    for (const name of Object.keys(deps)) {
+      const child = resolveKey(lockPackages, key, name);
+      if (child) queue.push(child);
+    }
 
+    const packageDirectory = path.join(appDir, 'node_modules', ...keySegments(key).join('/node_modules/').split('/'));
+    const manifest = JSON.parse(
+      await readFile(path.join(packageDirectory, 'package.json'), 'utf8').catch(() => '{}'),
+    );
+    const name = spec.slice(0, spec.lastIndexOf('@'));
+    const version = spec.slice(spec.lastIndexOf('@') + 1);
+    // Optional platform packages that are not installed on this host have no manifest.
+    if (!manifest.name) continue;
+    const id = `${name}@${version}`;
+    if (seen.has(id)) continue;
+    seen.add(id);
+
+    const license = typeof manifest.license === 'string' ? manifest.license : manifest.license?.type;
     packages.push({
       name,
       version,
-      license: metadata.license ?? 'UNKNOWN',
-      text: await readLicenseFiles(path.join(appDir, packagePath)),
+      license: license ?? 'UNKNOWN',
+      text: await readLicenseFiles(packageDirectory),
     });
   }
 
@@ -182,7 +265,7 @@ async function generateNpmReport() {
   return `<section class="npm-licenses">
   <div class="license-summary">
     <h3>Frontend dependencies</h3>
-    <p>Generated from production packages in package-lock.json.</p>
+    <p>Generated from production packages in bun.lock.</p>
   </div>
   <table class="license-table">
     <thead><tr><th>Package</th><th>Version</th><th>License</th></tr></thead>
@@ -230,5 +313,5 @@ const [rustReport, npmReport, assetReport] = await Promise.all([
   generateNpmReport(),
   generateAssetReport(),
 ]);
-await writeFile(outputFile, `${assetReport}\n${npmReport}\n${rustReport}`);
+await writeFile(outputFile, `${stamp}\n${assetReport}\n${npmReport}\n${rustReport}`);
 console.log(`[licenses] Report written to ${path.relative(appDir, outputFile)}`);

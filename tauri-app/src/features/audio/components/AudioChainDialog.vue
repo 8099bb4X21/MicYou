@@ -2,7 +2,7 @@
   <Transition name="dialog">
     <div
       v-if="isOpen"
-      class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+      class="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
       @click.self="close"
     >
       <div
@@ -40,7 +40,7 @@
               v-for="(item, index) in localChain"
               :key="item"
               :data-index="index"
-              class="flex min-w-0 items-center bg-surface-container rounded-xl p-3 border-2 transition-all shadow-sm group select-none relative"
+              class="flex min-w-0 items-center bg-surface-container rounded-xl p-3 border-2 transition-all shadow-xs group select-none relative"
               :class="
                 draggedIndex === index
                   ? 'opacity-40 border-primary scale-[0.98] pointer-events-none'
@@ -90,6 +90,7 @@
 <script setup lang="ts">
 import { ref, watch, computed, onUnmounted } from 'vue';
 import { usePlugins } from '@/features/plugins/composables/usePlugins';
+import { isMacOS } from '@/shared/lib/os';
 import { X, GripVertical, RotateCcw, Lock, Puzzle } from '@lucide/vue';
 import { useI18n } from 'vue-i18n';
 import {
@@ -105,10 +106,6 @@ const emit = defineEmits(['close', 'update:chain']);
 const { t, locale } = useI18n();
 
 // AEC 在 Linux/Windows 可用；macOS 上隐藏该选项
-const isMacOS =
-  typeof navigator !== 'undefined' &&
-  /Mac/.test(navigator.platform || navigator.userAgent) &&
-  !/iPhone|iPad|iPod/.test(navigator.userAgent);
 const isAecSupported = !isMacOS;
 
 const localChain = ref<string[]>([]);
@@ -176,7 +173,7 @@ const onPointerMove = (e: PointerEvent) => {
 
 const onPointerUp = () => {
   if (draggedIndex.value !== -1) {
-    // 持久化经 update:chain → SettingsDialog 自动保存 → update_audio_settings；
+    // 持久化经 update:chain → SettingsWindow 自动保存 → update_audio_settings；
     // 后端落库前会按 DSP 注册表再次对齐插件节点
     emit('update:chain', localChain.value);
   }

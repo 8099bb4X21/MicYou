@@ -17,7 +17,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
-use ringbuf::{HeapRb, Rb};
+use ringbuf::traits::{Consumer, Observer, RingBuffer};
+use ringbuf::HeapRb;
 
 use crate::AecFailure;
 
@@ -162,18 +163,13 @@ impl LoopbackCapture {
         // If the near-end stream paused while playback continued, discard old
         // reference audio instead of preserving a permanent multi-second lag.
         let stale_samples = buf
-            .len()
+            .occupied_len()
             .saturating_sub(MAX_REFERENCE_LAG_SAMPLES + n_samples);
-        for _ in 0..stale_samples {
-            buf.pop();
-        }
+        buf.skip(stale_samples);
 
-        let available = buf.len().min(n_samples);
-        let mut out = Vec::with_capacity(n_samples);
-        for _ in 0..available {
-            out.push(buf.pop().expect("available reference sample must exist"));
-        }
-        out.resize(n_samples, 0.0);
+        // Missing reference audio reads as silence.
+        let mut out = vec![0.0; n_samples];
+        buf.pop_slice(&mut out);
         out
     }
 
@@ -261,7 +257,7 @@ fn wasapi_loopback_thread(
     let result = (|| -> Result<(), Box<dyn std::error::Error>> {
         initialize_mta().ok()?;
 
-        let device = get_default_device(&Direction::Render)?;
+        let device = DeviceEnumerator::new()?.get_default_device(&Direction::Render)?;
         let device_name = device.get_friendlyname().unwrap_or_default();
         log::info!("[Loopback] WASAPI: capturing from '{}'", device_name);
 
@@ -276,15 +272,16 @@ fn wasapi_loopback_thread(
             channels
         );
 
-        let (_def_time, min_time) = audio_client.get_periods()?;
+        let (_def_time, min_time) = audio_client.get_device_period()?;
 
         // Direction::Capture on a Render device = loopback (auto loopback flag)
         audio_client.initialize_client(
             &mix_format,
-            min_time,
             &Direction::Capture,
-            &ShareMode::Shared,
-            true,
+            &StreamMode::EventsShared {
+                autoconvert: true,
+                buffer_duration_hns: min_time,
+            },
         )?;
 
         let h_event = audio_client.set_get_eventhandle()?;
@@ -324,8 +321,10 @@ fn wasapi_loopback_thread(
             if !deque.is_empty() {
                 let slice = deque.make_contiguous();
                 let f32_samples: Vec<f32> = slice
-                    .chunks_exact(4)
-                    .map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]]))
+                    .as_chunks::<4>()
+                    .0
+                    .iter()
+                    .map(|b| f32::from_le_bytes(*b))
                     .collect();
 
                 if !f32_samples.is_empty() {
@@ -466,10 +465,8 @@ fn pipewire_loopback_thread(
                         }
 
                         if let Ok(mut ring) = reader_buffer.lock() {
-                            for bytes in pending[..complete_bytes].chunks_exact(4) {
-                                ring.push_overwrite(f32::from_ne_bytes([
-                                    bytes[0], bytes[1], bytes[2], bytes[3],
-                                ]));
+                            for bytes in pending[..complete_bytes].as_chunks::<4>().0 {
+                                ring.push_overwrite(f32::from_ne_bytes(*bytes));
                             }
                         }
                         pending.drain(..complete_bytes);
@@ -542,7 +539,7 @@ fn cpal_capture_thread(
         let mut found = None;
         if let Ok(devices) = host.input_devices() {
             'outer: for dev in devices {
-                if let Ok(name) = dev.name() {
+                if let Some(name) = crate::device_name(&dev) {
                     let lower = name.to_lowercase();
                     let matches = lower.contains("blackhole");
                     if matches {
@@ -578,7 +575,7 @@ fn cpal_capture_thread(
     };
 
     let channels = config.channels() as usize;
-    let device_rate = config.sample_rate().0;
+    let device_rate = config.sample_rate();
     let sample_format = config.sample_format();
 
     log::info!(
@@ -602,10 +599,13 @@ fn cpal_capture_thread(
 
     let stream_active = active.clone();
     let stream_failure = failure.clone();
-    let err_fn = move |err: cpal::StreamError| {
-        log::error!("[Loopback] Stream error: {}", err);
-        set_failure(&stream_failure, AecFailure::ReferenceLost);
-        stream_active.store(false, Ordering::Relaxed);
+    let err_fn = move |err: cpal::Error| {
+        // cpal repeats the callback while the device stays broken; only the
+        // first error after the stream was active is worth reporting
+        if stream_active.swap(false, Ordering::Relaxed) {
+            log::error!("[Loopback] Stream error: {}", err);
+            set_failure(&stream_failure, AecFailure::ReferenceLost);
+        }
     };
 
     let buf_clone = buffer.clone();
@@ -614,7 +614,7 @@ fn cpal_capture_thread(
 
     let stream_result = match sample_format {
         cpal::SampleFormat::F32 => device.build_input_stream(
-            &config.into(),
+            config.into(),
             move |data: &[f32], _: &cpal::InputCallbackInfo| {
                 push_to_buffer(data, channels, device_rate, &resampler_clone, &buf_clone);
             },
@@ -622,9 +622,26 @@ fn cpal_capture_thread(
             None,
         ),
         cpal::SampleFormat::I16 => device.build_input_stream(
-            &config.into(),
+            config.into(),
             move |data: &[i16], _: &cpal::InputCallbackInfo| {
                 let f32_data: Vec<f32> = data.iter().map(|&s| s as f32 / 32768.0).collect();
+                push_to_buffer(
+                    &f32_data,
+                    channels,
+                    device_rate,
+                    &resampler_clone,
+                    &buf_clone,
+                );
+            },
+            err_fn,
+            None,
+        ),
+        // cpal 0.18 ranks I32 above I16 when picking the default format.
+        cpal::SampleFormat::I32 => device.build_input_stream(
+            config.into(),
+            move |data: &[i32], _: &cpal::InputCallbackInfo| {
+                let f32_data: Vec<f32> =
+                    data.iter().map(|&s| s as f32 / 2_147_483_648.0).collect();
                 push_to_buffer(
                     &f32_data,
                     channels,
@@ -671,6 +688,7 @@ fn cpal_capture_thread(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ringbuf::traits::Producer;
 
     #[test]
     fn capture_failure_is_consumed_once() {
@@ -690,7 +708,7 @@ mod tests {
         {
             let mut buffer = capture.buffer.lock().unwrap();
             for sample in 0..700 {
-                buffer.push(sample as f32).unwrap();
+                buffer.try_push(sample as f32).unwrap();
             }
         }
 
@@ -704,7 +722,7 @@ mod tests {
             &(660..700).map(|sample| sample as f32).collect::<Vec<_>>()
         );
         assert!(underrun[40..].iter().all(|sample| *sample == 0.0));
-        assert_eq!(capture.buffer.lock().unwrap().len(), 0);
+        assert_eq!(capture.buffer.lock().unwrap().occupied_len(), 0);
     }
 
     #[test]
@@ -714,7 +732,7 @@ mod tests {
         {
             let mut buffer = capture.buffer.lock().unwrap();
             for sample in 0..sample_count {
-                buffer.push(sample as f32).unwrap();
+                buffer.try_push(sample as f32).unwrap();
             }
         }
 
@@ -723,7 +741,7 @@ mod tests {
         assert_eq!(reference.first(), Some(&480.0));
         assert_eq!(reference.last(), Some(&959.0));
         assert_eq!(
-            capture.buffer.lock().unwrap().len(),
+            capture.buffer.lock().unwrap().occupied_len(),
             MAX_REFERENCE_LAG_SAMPLES
         );
     }
@@ -731,12 +749,12 @@ mod tests {
     #[test]
     fn reset_session_clears_buffer_and_stale_failure() {
         let capture = LoopbackCapture::new();
-        capture.buffer.lock().unwrap().push(1.0).unwrap();
+        capture.buffer.lock().unwrap().try_push(1.0).unwrap();
         set_failure(&capture.failure, AecFailure::ReferenceLost);
 
         capture.reset_session();
 
-        assert_eq!(capture.buffer.lock().unwrap().len(), 0);
+        assert_eq!(capture.buffer.lock().unwrap().occupied_len(), 0);
         assert_eq!(capture.take_failure_reason(), None);
         assert!(!capture.is_active());
     }
@@ -746,14 +764,14 @@ mod tests {
         let capture = LoopbackCapture::new();
         {
             let mut buffer = capture.buffer.lock().unwrap();
-            buffer.push(1.0).unwrap();
-            buffer.push(2.0).unwrap();
+            buffer.try_push(1.0).unwrap();
+            buffer.try_push(2.0).unwrap();
         }
 
         let reference = capture.read(4);
 
         assert_eq!(reference, vec![1.0, 2.0, 0.0, 0.0]);
-        assert_eq!(capture.buffer.lock().unwrap().len(), 0);
+        assert_eq!(capture.buffer.lock().unwrap().occupied_len(), 0);
     }
 
     #[test]

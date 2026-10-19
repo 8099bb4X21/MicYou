@@ -8,8 +8,33 @@ permissions:
   actions: write
 
 jobs:
+  # ----------------- 计算发布标签（日期+序号+_voice） -----------------
+  tag:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.compute.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Compute release tag
+        id: compute
+        run: |
+          # 标签 = 北京时间日期 + 当天序号(2位) + _voice，例如 2026101901_voice
+          DATE=$(TZ=Asia/Shanghai date +%Y%m%d)
+          # 远程查询当天已有 tag，取最大序号（不依赖本地 tags）
+          SEQ=$(git ls-remote --tags origin "refs/tags/${DATE}*_voice" 2>/dev/null \
+            | sed 's#.*refs/tags/##' \
+            | grep -oE "^${DATE}[0-9]{2}_voice$" \
+            | sed -E "s/^${DATE}([0-9]{2})_voice$/\1/" \
+            | sort -n | tail -1)
+          SEQ=${SEQ:-0}
+          NEXT=$(printf "%02d" $((10#$SEQ + 1)))
+          TAG="${DATE}${NEXT}_voice"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Computed tag: $TAG"
+
   # ----------------- Android Release 构建 -----------------
   build-android:
+    needs: tag
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
@@ -64,17 +89,17 @@ jobs:
             echo "No release APK found, skipping"
             exit 0
           fi
-          DATE=$(TZ=Asia/Shanghai date +%Y%m%d)
-          cp "$APK" "ci-artifacts/MicYou-Android-${DATE}-voice.apk"
+          cp "$APK" "ci-artifacts/MicYou-Android-${{ needs.tag.outputs.tag }}.apk"
       - name: Upload Android Artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: MicYou-Android
-          path: ci-artifacts/MicYou-Android-*-voice.apk
+          name: MicYou-Android-${{ needs.tag.outputs.tag }}
+          path: ci-artifacts/MicYou-Android-${{ needs.tag.outputs.tag }}.apk
           if-no-files-found: ignore
 
   # ----------------- Tauri Windows 构建 -----------------
   build-tauri-windows:
+    needs: tag
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -85,12 +110,10 @@ jobs:
           $line = (Select-String -Path gradle.properties -Pattern '^project\.version=').Line
           $version = $line.Split('=')[1].Trim()
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: tauri-app/package-lock.json
+          bun-version-file: tauri-app/package.json
       - name: Setup Rust (stable)
         uses: dtolnay/rust-toolchain@stable
       - name: Cache Rust
@@ -103,10 +126,10 @@ jobs:
         with:
           tool: cargo-about@0.9.1
       - name: Install Frontend Dependencies
-        run: npm ci --include=dev
+        run: bun install --frozen-lockfile
         working-directory: tauri-app
       - name: Build Tauri App (Windows)
-        run: npm run tauri -- build --no-bundle
+        run: bun run tauri build --no-bundle
         working-directory: tauri-app
       - name: Build Inno Setup Installer
         shell: pwsh
@@ -118,24 +141,24 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path ci-artifacts | Out-Null
-          $date = [System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId((Get-Date), 'China Standard Time').ToString('yyyyMMdd')
+          $tag = '${{ needs.tag.outputs.tag }}'
           $installer = Get-ChildItem -Path tauri-app/src-tauri/target/release/bundle/inno -Filter *.exe -ErrorAction SilentlyContinue | Select-Object -First 1
           if (-not $installer) {
             Write-Warning "No installer found, skipping artifact upload"
             exit 0
           }
-          Copy-Item $installer.FullName "ci-artifacts/MicYou-Win-$date-voice-installer.exe" -Force
+          Copy-Item $installer.FullName "ci-artifacts/MicYou-Win-$tag-installer.exe" -Force
       - name: Upload Artifact
         uses: actions/upload-artifact@v7
         with:
-          name: MicYou-Win
-          path: ci-artifacts/MicYou-Win-*-voice-installer.exe
+          name: MicYou-Win-${{ needs.tag.outputs.tag }}
+          path: ci-artifacts/MicYou-Win-${{ needs.tag.outputs.tag }}-installer.exe
           if-no-files-found: ignore
 
   # Fork 说明：只发 Windows + 安卓，macOS/Linux 构建已删（上游恢复见 git 历史）。
   # ----------------- 发布 Release -----------------
   release:
-    needs: [build-tauri-windows, build-android]
+    needs: [tag, build-tauri-windows, build-android]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -162,25 +185,19 @@ jobs:
         run: |
           git config --global user.name "${{ steps.contributor.outputs.name }}"
           git config --global user.email "${{ steps.contributor.outputs.email }}"
-      - name: Determine Tag Name
-        id: tag
-        run: |
-          # 手动发布：标签 = 编译日期(北京时间) + _voice，如 20261002_voice
-          TAG_NAME="$(TZ=Asia/Shanghai date +%Y%m%d)_voice"
-          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
-          echo "Using tag: $TAG_NAME"
       - name: Create Tag (if not exists)
         run: |
-          if git rev-parse "${{ steps.tag.outputs.tag_name }}" >/dev/null 2>&1; then
-            echo "Tag ${{ steps.tag.outputs.tag_name }} already exists"
+          TAG_NAME="${{ needs.tag.outputs.tag }}"
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Tag $TAG_NAME already exists"
           else
-            git tag "${{ steps.tag.outputs.tag_name }}"
-            git push origin "${{ steps.tag.outputs.tag_name }}"
+            git tag "$TAG_NAME"
+            git push origin "$TAG_NAME"
           fi
       - name: Create Release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ steps.tag.outputs.tag_name }}
+          tag_name: ${{ needs.tag.outputs.tag }}
           files: release-artifacts/**/*
           generate_release_notes: true
           make_latest: true
@@ -190,7 +207,7 @@ jobs:
       - name: Trigger MirrorChyanUploading
         if: ${{ github.repository_owner == 'LanRhyme' }}
         run: |
-          gh workflow run --repo $GITHUB_REPOSITORY mirrorchyan_release.yml -f tag=${{ steps.tag.outputs.tag_name }}
-          gh workflow run --repo $GITHUB_REPOSITORY mirrorchyan_release_note.yml -f tag=${{ steps.tag.outputs.tag_name }}
+          gh workflow run --repo $GITHUB_REPOSITORY mirrorchyan_release.yml -f tag=${{ needs.tag.outputs.tag }}
+          gh workflow run --repo $GITHUB_REPOSITORY mirrorchyan_release_note.yml -f tag=${{ needs.tag.outputs.tag }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

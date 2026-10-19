@@ -11,26 +11,33 @@
   - `src/` — Vue 3 + Vite + Tailwind CSS 前端
   - `src-tauri/` — Tauri 2 + Rust 后端（GUI 服务器）
   - `crates/` — 共享 Rust 工作区 crate：
-    - `micyou-protocol` — 网络协议
-    - `micyou-audio` — 音频传输、缓冲与 DSP
-    - `micyou-cli` — 无界面 CLI 服务器（二进制 `micyou`）
-    - `micyou-tui` — 交互式终端仪表盘（二进制 `micyou-tui`）
-- `docs/` — 项目文档（指向 micyou.top 在线文档）
-- `img/` — README 与项目图片
+    - `micyou-core` — 无界面服务端核心、生命周期管理与系统集成
+    - `micyou-protocol` — 网络通信协议定义（Protobuf）
+    - `micyou-audio` — 音频传输、缓冲与 DSP 处理链
+    - `micyou-plugin` — 插件框架（Native 与 WASM 运行时）
+    - `micyou-cli` — 命令行服务器（二进制 `micyou-cli`）
+    - `micyou-tui` — 终端交互仪表盘（二进制 `micyou-tui`）
+- `plugins/` — 示例插件与插件开发资源
+- `docs/` — 项目文档（含插件规范与开发指南）
+- `img/` — README 与项目截图
 
 ## 环境要求
 
-- Android SDK：compileSdk 36、minSdk 24、targetSdk 36（JDK 21）
-- 桌面前端：Node.js 22（CI 中使用的版本）+ npm
+- Android SDK：compileSdk 36、minSdk 24、targetSdk 36（JDK 17 或 JDK 21）
+- 桌面前端：Bun 1.4+
 - 桌面后端：Rust stable + Cargo。在 Linux 上还需安装 Tauri 2 系统依赖：`libwebkit2gtk-4.1-dev`、`libayatana-appindicator3-dev`、`librsvg2-dev`、`patchelf`、`libxdo-dev`、`libssl-dev`、`libasound2-dev`。
 
 ## 从源代码构建
 
 ### Android 应用（APK）
 
+标准构建（Android 7.0+）：
+
 ```bash
 ./gradlew :composeApp:assembleDebug
 ```
+
+如需针对低版本 Android 设备（Android 5.0+ / API 21+）进行兼容构建，请参阅 [Android 低版本兼容构建指南](docs/android-compat.md)。
 
 可选（仅维护者需要）：发布签名通过 `ANDROID_KEYSTORE_PATH`、`ANDROID_KEYSTORE_PASSWORD`、`ANDROID_KEY_ALIAS`、`ANDROID_KEY_PASSWORD` 环境变量配置；`local.properties` 中的 `AIFADIAN_API_TOKEN`、`AIFADIAN_USER_ID` 用于 App 内的赞助者列表（爱发电 API）。普通贡献者可忽略两者——未配置时赞助者弹窗只会显示 "API not configured"。
 
@@ -38,16 +45,16 @@
 
 ```bash
 cd tauri-app
-npm install          # 仅在需要恢复或更新依赖时执行
-npm run build        # vue-tsc 类型检查 + vite 构建
+bun install          # 仅在需要恢复或更新依赖时执行
+bun run build        # vue-tsc 类型检查 + vite 构建
 ```
 
 ### 桌面 GUI（Tauri）
 
 ```bash
 cd tauri-app
-npm run tauri dev    # 开发模式
-npm run tauri build  # 发布包（Windows 为 NSIS 安装程序，Linux 为 .deb/.rpm/.AppImage，macOS 为 .dmg）
+bun run tauri dev    # 开发模式
+bun run tauri build  # 发布包（Windows 为 NSIS 安装程序，Linux 为 .deb/.rpm/.AppImage，macOS 为 .dmg）
 ```
 
 ### CLI 与 TUI 服务器
@@ -68,7 +75,7 @@ GUI、CLI 与 TUI 共享同一份服务器配置与 DSP 设置。
 
 ```bash
 cd tauri-app
-npm run sync-version
+bun run sync-version
 ```
 
 ## 国际化（i18n）
@@ -121,7 +128,7 @@ enum class AppLanguage(val label: String, val code: String) {
 ### 测试翻译
 
 - Android：构建 APK（`./gradlew :composeApp:assembleDebug`），然后在 **设置 → 语言** 中检查。
-- 桌面端：运行 `npm run tauri dev`，然后在 **设置 → 语言** 中检查。
+- 桌面端：运行 `bun run tauri dev`，然后在 **设置 → 语言** 中检查。
 - 确认所有字符串显示正确，布局没有裁剪或溢出。
 
 ## 提交更改
@@ -135,7 +142,7 @@ enum class AppLanguage(val label: String, val code: String) {
 在发起拉取请求前：
 
 - 确保你修改的平台的所有语言文件键集合一致。
-- 确保 Android 调试构建（`./gradlew :composeApp:assembleDebug`）与桌面端构建（`cd tauri-app && npm run build`）通过。
+- 确保 Android 调试构建（`./gradlew :composeApp:assembleDebug`）与桌面端构建（`cd tauri-app && bun run build`）通过。
 - CI（`.github/workflows/development.yml`）会在每次推送与拉取请求时构建 Android 调试 APK 以及 Windows、macOS、Linux 的 Tauri 安装包。
 
 参与贡献即表示您同意遵守项目的[行为准则](./CODE_OF_CONDUCT.md)。

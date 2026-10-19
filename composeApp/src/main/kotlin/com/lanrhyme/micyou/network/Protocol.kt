@@ -101,7 +101,10 @@ data class MuteMessage(
 @Serializable
 data class ConnectMessage(
     @ProtoNumber(1)
-    val sessionId: Long = 0
+    val sessionId: Long = 0,
+    // 客户端平台，桌面端据此显示设备类型；默认值不会被编码，发送时须显式传入 CLIENT_PLATFORM
+    @ProtoNumber(2)
+    val platform: String = ""
 )
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -119,8 +122,8 @@ data class PongMessage(
 )
 
 // 跨端插件消息（对齐 tauri-app/crates/micyou-protocol/proto/network.proto field 7）。
-// 远程按键复用该通道：source="remote-key"，topic="key-event"，
-// payload 2 字节：[keyId, action]，keyId 1=右Alt 2=右Alt+空格，action 0=按下 1=松开。
+// 远程按键复用该通道：source="remote-key"，topic="key-chord"，
+// payload = [n, vk1..vkn, action]，action 0=按下 1=松开。
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class PluginMessage(
@@ -172,11 +175,6 @@ data class PluginMessage(
     }
 }
 
-/** 远程按键 keyId：1=右Alt，2=右Alt+空格，3=回车 */
-const val REMOTE_KEY_RALT = 1
-const val REMOTE_KEY_ALT_SPACE = 2
-const val REMOTE_KEY_ENTER = 3
-
 /** 和弦消息 topic：payload=[n, vk1..vkn, action]，action 0=按下 1=松开。 */
 const val REMOTE_KEY_TOPIC_CHORD = "key-chord"
 
@@ -213,15 +211,17 @@ fun chordToString(vks: List<Int>): String {
     return vks.filter { it in CHORD_KEY_OPTIONS }.distinct().joinToString(",")
 }
 
-/** 远程按键 action：0=按下，1=松开 */
-const val REMOTE_KEY_DOWN = 0
-const val REMOTE_KEY_UP = 1
-
 const val REMOTE_KEY_SOURCE = "remote-key"
-const val REMOTE_KEY_TOPIC = "key-event"
 
+// TCP handshake strings, matching HANDSHAKE_CLIENT_STR / HANDSHAKE_SERVER_STR in micyou-protocol
+const val HANDSHAKE_CLIENT = "MicYouCheck1"
+const val HANDSHAKE_SERVER = "MicYouCheck2"
 const val PACKET_MAGIC = 0x4D696359 // "MicY" in ASCII
 const val UDP_PACKET_MAGIC = 0x4D696355 // "MicU" in ASCII
+/** ConnectMessage.platform 取值，与 micyou-core 的 ClientPlatform 对应 */
+const val CLIENT_PLATFORM = "android"
+/** TCP 控制帧负载上限，与 micyou-core 的 MAX_CONTROL_PAYLOAD_LEN 一致 */
+const val MAX_CONTROL_PAYLOAD_SIZE = 1024 * 1024
 const val UDP_CUSTOM_HEADER_SIZE = 8
 const val UDP_MAX_DATAGRAM_SIZE = 1472
 // 为自定义头、嵌套 protobuf、64 位字段及 FEC 长度元数据预留最坏情况预算。

@@ -269,8 +269,6 @@ class MainViewModel : ViewModel() {
     // Audio Stream methods
     fun toggleStream() = audioStreamViewModel.toggleStream()
     fun toggleMute() = audioStreamViewModel.toggleMute()
-    fun remoteKeyDown(keyId: Int) = audioStreamViewModel.remoteKeyDown(keyId)
-    fun remoteKeyUp(keyId: Int) = audioStreamViewModel.remoteKeyUp(keyId)
     fun remoteChordDown(vks: List<Int>) = audioStreamViewModel.remoteChordDown(vks)
     fun remoteChordUp(vks: List<Int>) = audioStreamViewModel.remoteChordUp(vks)
     fun startStream() = audioStreamViewModel.startStream()
@@ -312,6 +310,7 @@ class MainViewModel : ViewModel() {
     fun setVolumeChordUp(vks: List<Int>) = settingsViewModel.setVolumeChordUp(vks)
     fun setVolumeChordDown(vks: List<Int>) = settingsViewModel.setVolumeChordDown(vks)
     fun setButtonSlot(index: Int, slot: com.lanrhyme.micyou.settings.ButtonSlot) = settingsViewModel.setButtonSlot(index, slot)
+    fun setButtonSlots(slots: List<com.lanrhyme.micyou.settings.ButtonSlot>) = settingsViewModel.setButtonSlots(slots)
     fun setVisualizerStyle(style: VisualizerStyle) = settingsViewModel.setVisualizerStyle(style)
     fun setAutoCheckUpdate(enabled: Boolean) = settingsViewModel.setAutoCheckUpdate(enabled)
     fun setUseMirrorDownload(enabled: Boolean) = settingsViewModel.setUseMirrorDownload(enabled)

@@ -28,3 +28,7 @@ composeApp/micyou.conf
 agentchattr/
 .reasonix/
 .planning/
+FORK_VS_UPSTREAM.md
+.pi/
+handsoff.md
+*.local.md

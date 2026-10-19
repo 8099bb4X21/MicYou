@@ -10,7 +10,9 @@
       "connecting": "恭候装置中...",
       "starting": "正启服务...",
       "ready": "已备矣",
-      "streamingDesc": "安卓装置已通矣。",
+      "streamingDesc": "装置已通矣。",
+      "streamingDescAndroid": "安卓装置已通矣。",
+      "streamingDescIos": "iOS 装置已通矣。",
       "connectingDesc": "监听端口 {port} 中",
       "startingDesc": "音频服务正始化，且稍候。",
       "readyDesc": "点启以候连接。",
@@ -47,7 +49,6 @@
       "aecDisabled": "AEC 不可用，已自停。",
       "aecDisabledInferenceFailed": "AEC 处理音频败，已自停。",
       "aecDisabledModelLoadFailed": "AEC AI 模型载入败，已自停。",
-      "aecDisabledModelMissing": "AEC AI 模型不存，已自停。",
       "aecDisabledPipeWireUnavailable": "PipeWire 不可用，AEC 已自停。",
       "aecDisabledReferenceLost": "AEC 音频参考流已断，已自停。",
       "aecDisabledVirtualSourceMissing": "虚拟音源不存，AEC 已自停。"
@@ -280,7 +281,7 @@
       "copied": "已誊",
       "exportLog": "出日志牍",
       "introTitle": "简介",
-      "introText": "MicYou 者，开源麦克风之具也。可使安卓装置变为电脑之高品质麦克风，以 Wi-Fi 或 USB 相连，音频传输延迟极低。"
+      "introText": "MicYou 者，开源麦克风之具也。可使安卓或 iOS 装置变为电脑之高品质麦克风，以 Wi-Fi 或 USB 相连，音频传输延迟极低。"
     },
     "runMode": {
       "title": "运行模式",
@@ -415,10 +416,6 @@
     "title": "开机自启",
     "desc": "登电脑时自启 MicYou。"
   },
-  "floatingWindow": {
-    "title": "案頭懸窗",
-    "desc": "於屏面顯常居其上之聲波浮珠，按之可噤聲，引之可隨意移"
-  },
   "notifications": {
     "title": "通知",
     "desc": "装置连断时示通知。"
@@ -524,6 +521,7 @@
       "checkAntivirus": "查安全软件设",
       "checkUsbCable": "查 USB 线",
       "enableUsbDebugging": "启 USB 调试",
+      "connectIosOverUsb": "iPhone 或 iPad：启 MicYou，择「USB」而连之；Windows 尚须装 iTunes",
       "runAdbCommand": "于电脑行此令：{cmd}",
       "checkAdbInstalled": "保已装 ADB",
       "runAdbManually": "手行：{cmd}",
@@ -539,7 +537,7 @@
   },
   "onboarding": {
     "title": "迎用 MicYou",
-    "desc": "此应用可使安卓装置变为电脑之高品质麦克风，以 Wi-Fi 或 USB 相连。",
+    "desc": "此应用可使安卓或 iOS 装置变为电脑之高品质麦克风，以 Wi-Fi 或 USB 相连。",
     "quickStart": "速启指南",
     "step1Title": "一、装桌面应用",
     "step1Desc": "于电脑下载并装 MicYou",
@@ -583,6 +581,7 @@
     "desc": "以原生或 WASM 插件擴展 MicYou",
     "refresh": "刷新",
     "loading": "載入插件中…",
+    "panelLoading": "載入面板中…",
     "noPlugins": "尚未安裝插件",
     "openDir": "開啟插件目錄",
     "installHint": "置插件目錄或 .zip 於插件目錄，再行刷新",
@@ -631,6 +630,17 @@
     "uninstallConfirm": "欲卸 {name} 乎？",
     "marketSearch": "搜插件坊",
     "marketAll": "諸類",
-    "marketContribute": "獻插件"
+    "marketContribute": "獻插件",
+    "saving": "存儲中…",
+    "importPreview": {
+      "title": "載此外掛乎？",
+      "name": "名",
+      "version": "版",
+      "author": "作者",
+      "license": "許可",
+      "runtime": "類",
+      "capabilities": "所求之能",
+      "none": "（無）"
+    }
   }
 }

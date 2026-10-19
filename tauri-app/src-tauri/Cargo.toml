@@ -1,119 +1,64 @@
 [package]
 name = "micyou-app"
-version = "2.0.3"
+version = "2.1.1"
 description = "MicYou - Turn your Android device into a high-quality PC microphone"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
-
-[lib]
-name = "tauri_app_lib"
-crate-type = ["staticlib", "cdylib", "rlib"]
 
 [[bin]]
 name = "micyou"
 path = "src/main.rs"
 
 [features]
-default = ["vbcable", "adb", "web-server"]
-vbcable = []
-adb = []
-web-server = [
-  "dep:axum",
-  "dep:rcgen",
-  "dep:rustls",
-  "dep:tokio-rustls",
-  "dep:rustls-pemfile",
-]
+default = ["vbcable", "web-server"]
+vbcable = ["micyou-core/vbcable"]
+web-server = ["micyou-core/web-server"]
 
 [dependencies]
-# Workspace crates
-micyou-protocol = { path = "../crates/micyou-protocol" }
-micyou-audio = { path = "../crates/micyou-audio", features = [
-  "dsp",
-  "noise-suppression",
-] }
-micyou-plugin = { path = "../crates/micyou-plugin" }
+micyou-core.workspace = true
 
-# Tauri
 tauri = { version = "2", features = [
   "macos-private-api",
   "tray-icon",
   "image-png",
 ] }
-tauri-plugin-opener = "2"
 tauri-plugin-autostart = "2"
-tauri-plugin-log = "2.8.0"
 tauri-plugin-dialog = "2.7.1"
-tauri-plugin-notification = "2.3.3"
-
-# CLI/TUI plugin api fallback
-open = "5"
-notify-rust = "4"
-global-hotkey = "0.8"
-
-# Core
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-semver = "1"
-parking_lot = "0.12"
-tokio = { version = "1.52.3", features = ["full"] }
-tokio-util = "0.7.18"
-log = "0.4.32"
-bytes = "1.11.1"
-prost = "0.14.3"
-
-# Audio device enumeration
-cpal = "0.15.3"
-
-# Opus decode (pure Rust, RFC 8251, no FFI)
-opus-decoder = "0.1.1"
-
-# Networking
-mdns-sd = "0.20.0"
-zip = "2.2"
-hostname = "0.4.2"
-local-ip-address = "0.6.13"
-socket2 = "0.6.4"
-
-# Sponsor/API
-reqwest = { version = "0.13.4", features = ["json", "blocking"] }
-arboard = "3.4"
-md-5 = "0.11.0"
-
-
-# Web server (optional)
-axum = { version = "0.8", features = ["ws"], optional = true }
-rcgen = { version = "0.13", optional = true }
-rustls = { version = "0.23", optional = true }
-tokio-rustls = { version = "0.26", optional = true }
-rustls-pemfile = { version = "2", optional = true }
 tauri-plugin-global-shortcut = "2"
+tauri-plugin-log = "2.8.0"
+tauri-plugin-notification = "2.3.3"
+tauri-plugin-opener = "2"
+
+log.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+# fork：远程按键注入（DLL 句柄缓存）与唤醒监听（UDP）所需。
+parking_lot = "0.12"
+tokio = { version = "1", features = ["net", "time"] }
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
 [target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3", features = [
-  "winsock2",
-  "winuser",
-  "processthreadsapi",
-  "handleapi",
-  "winnt",
-] }
-winreg = "0.52"
-windows = { version = "0.58", features = [
+winapi = { version = "0.3", features = ["winuser", "dwmapi"] }
+# fork：WinUHID 注入（LoadLibraryW/GetProcAddress）与悬浮窗定位/免激活（FindWindowW 等）。
+# 与 tauri 内部的 windows 0.62 同版本，HWND 类型互通，无需裸指针绕行。
+windows = { version = "0.62", features = [
   "Win32_Foundation",
   "Win32_System_LibraryLoader",
   "Win32_UI_WindowsAndMessaging",
 ] }
 
-[target.'cfg(unix)'.dependencies]
-libc = "0.2"
-
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk = { version = "0.18", default-features = false }
 glib = "0.18"
+gdkwayland-sys = "0.18"
+libc.workspace = true
+wayland-client = { version = "0.31", features = ["system"] }
+wayland-protocols = { version = "0.32", features = ["client", "staging"] }
+wayland-protocols-plasma = { version = "0.3", features = ["client"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc = "0.2"
