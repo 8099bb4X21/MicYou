@@ -301,6 +301,7 @@
     <string name="settingsTitle">Settings</string>
     <string name="backTitle">Back</string>
     <string name="keyListTitle">Key List</string>
+    <string name="dragToReorder">Drag to reorder</string>
     <string name="softwareIntro">Introduction</string>
     <string name="start">Start</string>
     <string name="stop">Stop</string>

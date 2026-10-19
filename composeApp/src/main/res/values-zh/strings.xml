@@ -266,6 +266,7 @@
     <string name="settingsTitle">设置</string>
     <string name="backTitle">返回</string>
     <string name="keyListTitle">按键列表</string>
+    <string name="dragToReorder">拖动排序</string>
     <string name="softwareIntro">软件介绍</string>
     <string name="start">开始</string>
     <string name="stop">停止</string>

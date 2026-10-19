@@ -310,6 +310,7 @@ class MainViewModel : ViewModel() {
     fun setVolumeChordUp(vks: List<Int>) = settingsViewModel.setVolumeChordUp(vks)
     fun setVolumeChordDown(vks: List<Int>) = settingsViewModel.setVolumeChordDown(vks)
     fun setButtonSlot(index: Int, slot: com.lanrhyme.micyou.settings.ButtonSlot) = settingsViewModel.setButtonSlot(index, slot)
+    fun setButtonSlots(slots: List<com.lanrhyme.micyou.settings.ButtonSlot>) = settingsViewModel.setButtonSlots(slots)
     fun setVisualizerStyle(style: VisualizerStyle) = settingsViewModel.setVisualizerStyle(style)
     fun setAutoCheckUpdate(enabled: Boolean) = settingsViewModel.setAutoCheckUpdate(enabled)
     fun setUseMirrorDownload(enabled: Boolean) = settingsViewModel.setUseMirrorDownload(enabled)

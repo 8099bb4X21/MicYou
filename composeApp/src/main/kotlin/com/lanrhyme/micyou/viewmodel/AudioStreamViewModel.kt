@@ -298,15 +298,35 @@ class AudioStreamViewModel : ViewModel() {
         }
     }
 
+    private companion object {
+        /** 松开延迟（毫秒）：给 PC 端留出接收与注入时间，避免按/松太近漏键。 */
+        const val REMOTE_KEY_RELEASE_DELAY_MS = 100L
+    }
+
+    /** 待发送的松开任务：按和弦归并，快速重按时取消旧的松开，避免乱序。 */
+    private val pendingChordUps = HashMap<String, Job>()
+
+    private fun chordKey(vks: List<Int>): String = vks.sorted().joinToString(",")
+
     /** 自定义和弦按下/松开（音量键配置，VK 直传）。 */
     fun remoteChordDown(vks: List<Int>) {
+        // 同一和弦的待发送松开先取消：避免「新按下被旧松开覆盖」。
+        pendingChordUps.remove(chordKey(vks))?.cancel()
         auxiliaryScope.launch {
             _audioEngine.sendRemoteChord(vks, true)
         }
     }
 
+    /**
+     * 松开延迟 100ms 再发 UP：PC 端接收/注入有延迟，按下与松开挨得太近容易漏键
+     * （表现为「点了没反应」）。延迟期间若同一和弦再次按下，上面的 cancel 会撤销本次松开。
+     */
     fun remoteChordUp(vks: List<Int>) {
-        auxiliaryScope.launch {
+        val key = chordKey(vks)
+        pendingChordUps.remove(key)?.cancel()
+        pendingChordUps[key] = auxiliaryScope.launch {
+            delay(REMOTE_KEY_RELEASE_DELAY_MS)
+            pendingChordUps.remove(key)
             _audioEngine.sendRemoteChord(vks, false)
         }
     }

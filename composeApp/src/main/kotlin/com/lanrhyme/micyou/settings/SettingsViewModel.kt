@@ -275,6 +275,24 @@ class SettingsViewModel : ViewModel() {
         settings.putString("btn${index + 1}_chord", chordToString(clean.chord))
     }
 
+    /** 一次性写入四个槽位（按键列表页拖拽排序后调用，避免逐槽位触发多次重组）。 */
+    fun setButtonSlots(slots: List<ButtonSlot>) {
+        val clean = (0..3).map { i ->
+            val raw = slots.getOrElse(i) { DEFAULT_BUTTON_SLOTS[i] }
+            if (raw.type == "mute") {
+                ButtonSlot(type = "mute", chord = emptyList())
+            } else {
+                val chord = raw.chord.filter { it in CHORD_KEY_OPTIONS }.distinct()
+                if (chord.isEmpty()) DEFAULT_BUTTON_SLOTS[i] else ButtonSlot(type = "key", chord = chord)
+            }
+        }
+        _uiState.update { it.copy(buttonSlots = clean) }
+        clean.forEachIndexed { i, slot ->
+            settings.putString("btn${i + 1}_type", slot.type)
+            settings.putString("btn${i + 1}_chord", chordToString(slot.chord))
+        }
+    }
+
     fun setVisualizerStyle(style: VisualizerStyle) {
         _uiState.update { it.copy(visualizerStyle = style) }
         settings.putString("visualizer_style", style.name)
