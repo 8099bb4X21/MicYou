@@ -69,6 +69,7 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.MicOff
+import androidx.compose.material.icons.rounded.Dialpad
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Usb
 import androidx.compose.material.icons.rounded.Wifi
@@ -153,11 +154,23 @@ fun MobileHome(viewModel: MainViewModel) {
     val forcePureBlackBackground = state.oledPureBlack && isDarkTheme
     
     var showSettings by remember { mutableStateOf(false) }
+    var showKeyList by remember { mutableStateOf(false) }
     var contentVisible by remember { mutableStateOf(false) }
 
-    // Handle Android system back gesture to close settings page (no-op on desktop)
-    BackHandler(enabled = showSettings) {
-        showSettings = false
+    // 系统返回：优先关设置页，其次关按键列表页（no-op on desktop）
+    BackHandler(enabled = showSettings || showKeyList) {
+        if (showSettings) showSettings = false else showKeyList = false
+    }
+
+    // 连接成功后自动进入按键列表页（仅边沿触发；从按键列表返回主菜单后不会被弹回）
+    var lastStreamState by remember { mutableStateOf(state.streamState) }
+    LaunchedEffect(state.streamState) {
+        if (state.streamState == StreamState.Streaming &&
+            lastStreamState != StreamState.Streaming
+        ) {
+            showKeyList = true
+        }
+        lastStreamState = state.streamState
     }
     val hazeState = if (state.backgroundSettings.enableHazeEffect && state.backgroundSettings.hasCustomBackground) {
         rememberHazeState()
@@ -247,12 +260,38 @@ fun MobileHome(viewModel: MainViewModel) {
                 ) {
                     MobileBottomBar(
                         state = state,
-                        viewModel = viewModel,
+                        onOpenKeyList = { showKeyList = true },
                                                 cardOpacity = state.backgroundSettings.cardOpacity,
                         hazeState = hazeState
                     )
                 }
             }
+            // Key list page overlay（连接成功后自动进入；返回回到主菜单）
+            AnimatedVisibility(
+                visible = showKeyList,
+                enter = slideInHorizontally(
+                    initialOffsetX = { it },
+                    animationSpec = tween(360, easing = EasingFunctions.EaseOutExpo)
+                ) + fadeIn(animationSpec = tween(240)),
+                exit = slideOutHorizontally(
+                    targetOffsetX = { it },
+                    animationSpec = tween(300, easing = EasingFunctions.EaseInOutExpo)
+                ) + fadeOut(animationSpec = tween(200))
+            ) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    shadowElevation = 0.dp,
+                    tonalElevation = 0.dp
+                ) {
+                    MobileKeyListPage(
+                        viewModel = viewModel,
+                        onBack = { showKeyList = false },
+                        onOpenSettings = { showSettings = true },
+                        hazeState = hazeState
+                    )
+                }
+            }
+
             // Settings page overlay
             AnimatedVisibility(
                 visible = showSettings,
@@ -624,7 +663,7 @@ private fun MobileCompactStatus(
 @Composable
 private fun MobileBottomBar(
     state: AppUiState,
-    viewModel: MainViewModel,
+    onOpenKeyList: () -> Unit,
     cardOpacity: Float = 1f,
     hazeState: HazeState? = null
 ) {
@@ -640,28 +679,32 @@ private fun MobileBottomBar(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            val streaming = state.streamState == StreamState.Streaming
-            val slots = state.buttonSlots
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            // 入口按钮：按键列表（原 2x2 槽位移到独立页面，主界面不再拥挤）
+            Surface(
+                onClick = onOpenKeyList,
+                shape = MaterialTheme.shapes.small,
+                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                modifier = Modifier.fillMaxWidth().testTag("home_key_list")
+                    .semantics { contentDescription = "home_key_list" }
             ) {
-                Box(modifier = Modifier.weight(1f)) {
-                    BottomSlotButton(index = 0, slots = slots, streaming = streaming, state = state, viewModel = viewModel)
-                }
-                Box(modifier = Modifier.weight(1f)) {
-                    BottomSlotButton(index = 1, slots = slots, streaming = streaming, state = state, viewModel = viewModel)
-                }
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Box(modifier = Modifier.weight(1f)) {
-                    BottomSlotButton(index = 2, slots = slots, streaming = streaming, state = state, viewModel = viewModel)
-                }
-                Box(modifier = Modifier.weight(1f)) {
-                    BottomSlotButton(index = 3, slots = slots, streaming = streaming, state = state, viewModel = viewModel)
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        Icons.Rounded.Dialpad,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        stringResource(R.string.keyListTitle),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 }
             }
             Row(
@@ -686,7 +729,7 @@ private fun MobileBottomBar(
 }
 
 @Composable
-private fun BottomSlotButton(
+internal fun BottomSlotButton(
     index: Int,
     slots: List<com.lanrhyme.micyou.settings.ButtonSlot>,
     streaming: Boolean,

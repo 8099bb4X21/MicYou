@@ -299,6 +299,8 @@
     <string name="sampleRateLabel">Sample Rate</string>
     <string name="selectBackgroundImage">Select Image</string>
     <string name="settingsTitle">Settings</string>
+    <string name="backTitle">Back</string>
+    <string name="keyListTitle">Key List</string>
     <string name="softwareIntro">Introduction</string>
     <string name="start">Start</string>
     <string name="stop">Stop</string>
